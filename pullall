@@ -1,0 +1,9 @@
+#!/usr/bin/python2.7
+
+import os
+
+members = ['droundy', 'gjepson']
+
+for member in members:
+    os.system('git pull git://github.com/%s/icfp-2017-contest.git :' % member)
+
