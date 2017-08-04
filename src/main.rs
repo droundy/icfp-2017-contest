@@ -4,39 +4,43 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-#[derive(Serialize, Deserialize, Debug)]
+use std::io::Read;
+use std::collections::hash_map::HashMap;
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct State {
     punter: usize,
     punters: usize,
     map: Map,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Ready {
     punter: usize,
     state: State,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Setup {
     punter: usize,
     punters: usize,
     map: Map,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Gameplay {
+    #[serde(rename = "move")]
     move_: Moves,
     state: State,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Scoring {
     stop: Stop,
     state: State,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Map {
     #[serde(default)]
     sites: Vec<Site>,
@@ -44,14 +48,16 @@ struct Map {
     rivers: Vec<River>,
     #[serde(default)]
     mines: Vec<usize>,
+    #[serde(default)]
+    rivers_from: HashMap<usize,River>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Site {
     id: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 struct River {
     source: usize,
     target: usize,
@@ -59,13 +65,13 @@ struct River {
     claimed_by: Option<usize>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Moves {
     #[serde(default)]
     moves: Vec<Move>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Stop {
     #[serde(default)]
     moves: Vec<Move>,
@@ -73,7 +79,7 @@ struct Stop {
     scores: Vec<Score>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Score {
     #[serde(default)]
     punter: usize,
@@ -81,7 +87,7 @@ struct Score {
     score: usize,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum Move {
     claim {
         punter: usize,
@@ -95,10 +101,15 @@ enum Move {
 
 impl State {
     fn new(s: Setup) -> State {
+        let mut map = s.map.clone();
+        for r in s.map.rivers.iter() {
+            map.rivers_from.insert(r.source, *r);
+            map.rivers_from.insert(r.target, *r);
+        }
         State {
             punter: s.punter,
             punters: s.punters,
-            map: s.map,
+            map: map,
         }
     }
     fn play(&mut self) -> Move {
@@ -124,24 +135,38 @@ impl State {
 }
 
 fn main() {
-    let mut input = String::new();
-    eprintln!("hello world");
-    match std::io::stdin().read_line(&mut input) {
-        Ok(n) => {
-            eprintln!("{} bytes read", n);
-            eprintln!("{}", input);
+    let mut greeting: HashMap<String,String> = HashMap::new();
+    greeting.insert(String::from("me"), String::from("Xiphon"));
+    print_string_with_length(&serde_json::to_string(&greeting).unwrap());
+
+    // This is just the "you" response!
+    let length = read_integer_to_colon();
+    let mut input = vec![b'x'; length];
+    match std::io::stdin().read_exact(input.as_mut_slice()) {
+        Ok(()) => {
+            eprintln!("{}", String::from_utf8_lossy(&input));
         }
         Err(error) => eprintln!("error: {}", error),
     }
-    let input = input.replace("\"move\":", "\"move_\":");
-    if let Ok(s) = serde_json::from_str::<Setup>(&input) {
+
+    // Now we read the real thing!
+    let length = read_integer_to_colon();
+    let mut input = vec![b'x'; length];
+    match std::io::stdin().read_exact(input.as_mut_slice()) {
+        Ok(()) => {
+            eprintln!("{}", String::from_utf8_lossy(&input));
+        }
+        Err(error) => eprintln!("error: {}", error),
+    }
+
+    if let Ok(s) = serde_json::from_slice::<Setup>(&input) {
         eprintln!("It is a setup!\n");
         let state = State::new(s);
-        println!("{}", serde_json::to_string(&Ready {
+        print_string_with_length(&serde_json::to_string(&Ready {
             punter: state.punter,
             state: state,
         }).unwrap());
-    } else if let Ok(play) = serde_json::from_str::<Gameplay>(&input) {
+    } else if let Ok(play) = serde_json::from_slice::<Gameplay>(&input) {
         println!("It is a play!");
         let mut state = play.state;
         state.apply_moves(play.move_);
@@ -150,9 +175,58 @@ fn main() {
         let movelen = movestr.len();
         movestr.truncate(movelen-1);
         let statestr = serde_json::to_string(&state).unwrap();
-        println!("{}, \"state\": {}}}", movestr, statestr);
+        let totalstring = format!("{}, \"state\": {}}}", movestr, statestr);
+        print_string_with_length(&totalstring);
     } else {
         eprintln!("It is neither");
-        serde_json::from_str::<Gameplay>(&input).unwrap();
+        serde_json::from_slice::<Gameplay>(&input).unwrap();
+    }
+}
+
+fn print_string_with_length(s: &str) {
+    print!("{}:{}", s.len(), s);
+}
+
+fn read_integer_to_colon() -> usize {
+    let mut byte: [u8;1] = [0;1];
+    let mut length = 0;
+    loop {
+        std::io::stdin().read_exact(&mut byte)
+            .expect("there should be an integer followed by a colon");
+        length *= 10;
+        match byte[0] {
+            b':' => return length/10,
+            b'0' => (),
+            b'1' => {
+                length += 1;
+            },
+            b'2' => {
+                length += 2;
+            },
+            b'3' => {
+                length += 3;
+            },
+            b'4' => {
+                length += 4;
+            },
+            b'5' => {
+                length += 5;
+            },
+            b'6' => {
+                length += 6;
+            },
+            b'7' => {
+                length += 7;
+            },
+            b'8' => {
+                length += 8;
+            },
+            b'9' => {
+                length += 9;
+            },
+            other => {
+                panic!("You gave me a bad byte! {}", String::from_utf8_lossy(&byte));
+            },
+        }
     }
 }
