@@ -7,22 +7,27 @@ extern crate serde_json;
 use std::io::Read;
 use std::collections::hash_map::HashMap;
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
+struct PunterId(pub usize);
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
+struct SiteId(pub usize);
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct State {
-    punter: usize,
+    punter: PunterId,
     punters: usize,
     map: Map,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Ready {
-    punter: usize,
+    punter: PunterId,
     state: State,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Setup {
-    punter: usize,
+    punter: PunterId,
     punters: usize,
     map: Map,
 }
@@ -47,22 +52,22 @@ struct Map {
     #[serde(default)]
     rivers: Vec<River>,
     #[serde(default)]
-    mines: Vec<usize>,
+    mines: Vec<SiteId>,
     #[serde(default)]
-    rivers_from: HashMap<usize,River>,
+    rivers_from: HashMap<SiteId,River>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Site {
-    id: usize,
+    id: SiteId,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 struct River {
-    source: usize,
-    target: usize,
+    source: SiteId,
+    target: SiteId,
     #[serde(default)]
-    claimed_by: Option<usize>,
+    claimed_by: Option<PunterId>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -82,7 +87,7 @@ struct Stop {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct Score {
     #[serde(default)]
-    punter: usize,
+    punter: PunterId,
     #[serde(default)]
     score: usize,
 }
@@ -90,12 +95,12 @@ struct Score {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum Move {
     claim {
-        punter: usize,
-        source: usize,
-        target: usize,
+        punter: PunterId,
+        source: SiteId,
+        target: SiteId,
     },
     pass {
-        punter: usize
+        punter: PunterId
     },
 }
 
@@ -122,7 +127,7 @@ impl State {
             match m {
                 &Move::pass {punter: _} => (),
                 &Move::claim { punter, source, target } => {
-                    eprintln!("punter {} claims {}->{}", punter, source, target);
+                    eprintln!("punter {:?} claims {:?}->{:?}", punter, source, target);
                     for r in self.map.rivers.iter_mut().filter(|r| r.claimed_by.is_none()) {
                         if r.source == source && r.target == target {
                             r.claimed_by = Some(punter);
@@ -224,7 +229,7 @@ fn read_integer_to_colon() -> usize {
             b'9' => {
                 length += 9;
             },
-            other => {
+            _ => {
                 panic!("You gave me a bad byte! {}", String::from_utf8_lossy(&byte));
             },
         }
