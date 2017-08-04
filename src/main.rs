@@ -12,11 +12,17 @@ struct PunterId(pub usize);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct SiteId(pub usize);
 
+/// RiverId is our private way of identifying a river.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
+struct RiverId(pub usize);
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct State {
     punter: PunterId,
     punters: usize,
     map: Map,
+    #[serde(default)]
+    rivers_from: HashMap<SiteId,HashMap<SiteId,RiverId>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,8 +59,6 @@ struct Map {
     rivers: Vec<River>,
     #[serde(default)]
     mines: Vec<SiteId>,
-    #[serde(default)]
-    rivers_from: HashMap<SiteId,River>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -106,22 +110,39 @@ enum Move {
 
 impl State {
     fn new(s: Setup) -> State {
-        let mut map = s.map.clone();
+        let mut rivers_from: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
         for r in s.map.rivers.iter() {
-            map.rivers_from.insert(r.source, *r);
-            map.rivers_from.insert(r.target, *r);
+            for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
+                let mut had_it = false;
+                if let Some(child) = rivers_from.get_mut(&site) {
+                    child.insert(other, RiverId(0));
+                    had_it = true;
+                }
+                if !had_it {
+                    let mut child = HashMap::new();
+                    child.insert(other, RiverId(0));
+                    rivers_from.insert(site, child);
+                }
+            }
         }
+        // FIXME eventually we want some AI in here, to make the most
+        // of our 10 seconds! This also means we need a place in State
+        // to store the plan we come up with.
         State {
             punter: s.punter,
             punters: s.punters,
-            map: map,
+            map: s.map,
+            rivers_from: rivers_from,
         }
     }
+    /// Here we use the AI to decide what to do.
     fn play(&mut self) -> Move {
         Move::pass {
             punter: self.punter,
         }
     }
+    /// Here we adjust the State based on the moves that we were told
+    /// about by the server.
     fn apply_moves(&mut self, moves: Moves) {
         for m in moves.moves.iter() {
             match m {
@@ -140,11 +161,14 @@ impl State {
 }
 
 fn main() {
+    // First send our greeting (and we always call ourselves "Xiphon"
+    // for now)
     let mut greeting: HashMap<String,String> = HashMap::new();
     greeting.insert(String::from("me"), String::from("Xiphon"));
     print_string_with_length(&serde_json::to_string(&greeting).unwrap());
 
-    // This is just the "you" response!
+    // This is just the "you" response, which is unimportant, but
+    // triggers the timer.
     let length = read_integer_to_colon();
     let mut input = vec![b'x'; length];
     match std::io::stdin().read_exact(input.as_mut_slice()) {
@@ -164,6 +188,7 @@ fn main() {
         Err(error) => eprintln!("error: {}", error),
     }
 
+    // Now we see what we have, and act on it.
     if let Ok(s) = serde_json::from_slice::<Setup>(&input) {
         eprintln!("It is a setup!\n");
         let state = State::new(s);
