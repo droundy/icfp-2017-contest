@@ -2,7 +2,7 @@
 
 import os
 
-members = ['droundy', 'gjepson']
+members = ['droundy', 'gjepson', 'ChrisMay1', 'ValdemarTD']
 
 for member in members:
     os.system('git pull git://github.com/%s/icfp-2017-contest.git :' % member)
