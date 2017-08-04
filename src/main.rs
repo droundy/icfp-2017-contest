@@ -55,6 +55,8 @@ struct Site {
 struct River {
     source: usize,
     target: usize,
+    #[serde(default)]
+    claimed_by: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -105,6 +107,19 @@ impl State {
         }
     }
     fn apply_moves(&mut self, moves: Moves) {
+        for m in moves.moves.iter() {
+            match m {
+                &Move::pass {punter: _} => (),
+                &Move::claim { punter, source, target } => {
+                    eprintln!("punter {} claims {}->{}", punter, source, target);
+                    for r in self.map.rivers.iter_mut().filter(|r| r.claimed_by.is_none()) {
+                        if r.source == source && r.target == target {
+                            r.claimed_by = Some(punter);
+                        }
+                    }
+                },
+            }
+        }
     }
 }
 
