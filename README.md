@@ -21,6 +21,19 @@ Entry for the 2017 ICFP programming contest
 5. A game visualizer.  Yes, they offer theirs, but it might be more
    fun to also write our own!
 
+## Testing the rust code
+
+You can run the setup stage with
+
+    cargo run < examples/setup.sample
+
+You can run a gameplay step with
+
+    cargo run < examples/gameplay
+
+Neither does anything special, but both should parse the json and
+output valid json.
+
 ## Team members
 
 David Roundy <roundyd@physics.oregonstate.edu>
