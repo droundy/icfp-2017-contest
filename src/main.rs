@@ -61,8 +61,6 @@ struct Site {
 struct River {
     source: SiteId,
     target: SiteId,
-    #[serde(default)]
-    claimed_by: Option<PunterId>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -114,13 +112,13 @@ struct State {
     #[serde(default)]
     rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>>,
     #[serde(default)]
-    riverdata: HashMap<RiverId, RiverData>,
+    riverdata: Vec<RiverData>,
 }
 
 impl State {
     fn new(s: Setup) -> State {
         let mut rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
-        let mut riverdata: HashMap<RiverId, RiverData> = HashMap::new();
+        let mut riverdata: Vec<RiverData> = Vec::new();
         let mut next = 0;
         for r in s.map.rivers.iter() {
             for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
@@ -136,7 +134,7 @@ impl State {
                     child.insert(other, id);
                     rivermap.insert(site, child);
                 }
-                riverdata.insert(id, RiverData {
+                riverdata.push(RiverData {
                     id: id,
                     sites: [r.target, r.source],
                     claimed: None,
@@ -167,12 +165,11 @@ impl State {
             match m {
                 &Move::pass {punter: _} => (),
                 &Move::claim { punter, source, target } => {
-                    //eprintln!("punter {:?} claims {:?}->{:?}", punter, source, target);
-                    for r in self.map.rivers.iter_mut().filter(|r| r.claimed_by.is_none()) {
-                        if r.source == source && r.target == target {
-                            r.claimed_by = Some(punter);
-                        }
+                    let rid = self.rivermap[&source][&target];
+                    if self.riverdata[rid.0].claimed.is_none() {
+                        self.riverdata[rid.0].claimed = Some(punter);
                     }
+                    //eprintln!("punter {:?} claims {:?}->{:?}", punter, source, target);
                 },
             }
         }
