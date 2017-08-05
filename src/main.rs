@@ -4,8 +4,11 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+mod randopt;
+
 use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
+use std::sync::{Arc,Mutex};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct PunterId(pub usize);
@@ -102,6 +105,30 @@ struct RiverData {
     id: RiverId,
     sites: [SiteId; 2],
     claimed: Option<PunterId>,
+}
+
+trait Optimizer : Default {
+    fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>);
+}
+
+trait Measurer : Default {
+    fn measure(&mut self, state: &State) -> f64;
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Default)]
+struct Plan {
+    value: f64,
+    river: RiverId,
+    why: String,
+}
+impl Plan {
+    fn new() -> Plan {
+        Plan {
+            value: -1e200,
+            river: RiverId(0),
+            why: String::from("new"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
