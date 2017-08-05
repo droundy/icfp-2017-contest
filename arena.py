@@ -1,34 +1,45 @@
 #!/usr/bin/env python2
 
-import sys, os, subprocess
+import sys, os, subprocess, argparse
 
 import rwjson
 import puntertools as pt
 
-punter_executables = ['target/debug/punter', 'target/debug/punter']
+parser = argparse.ArgumentParser(description='Compete some punters.')
+parser.add_argument('--map', metavar='MAP', nargs='?',
+                    default='maps/sample.json',
+                    help='the map to use')
+parser.add_argument('programs', metavar='PROGRAM', nargs=argparse.REMAINDER,
+                    help='the programs to compete')
 
-if len(sys.argv) > 2:
-    punter_executables = sys.argv[1:]
+args = parser.parse_args()
+while len(args.programs) < 2:
+    args.programs.append('target/debug/punter')
 
-num_punters = len(punter_executables)
+if '.json' not in args.map:
+    args.map = 'maps/{}.json'.format(args.map)
+print 'using map', args.map
+
+punter_executables = args.programs
+num_punters = len(args.programs)
 
 BUFFER_SIZE = 1024*1024
 
 def offline_call(args, inp):
-    print 'calling', args, 'with', inp
+    #print 'calling', args, 'with', inp
     x = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     data = rwjson.readMessage(x.stdout)
-    print 'got offline handshake response', data
+    #print 'got offline handshake response', data
     x.stdin.write(rwjson.writeMessage({'you': data['me']}))
     x.stdin.write(rwjson.writeMessage(inp))
-    print 'have written back to offline'
+    #print 'have written back to offline'
     return rwjson.readMessage(x.stdout)
 
 states = [0]*len(punter_executables)
-with open('maps/sample.json') as f:
+with open(args.map) as f:
     themap = rwjson.readJson(f)
 serverstate = pt.map_to_nice(themap)
-print 'serverstate is', serverstate
+#print 'serverstate is', serverstate
 
 all_moves = []
 for punterid in range(num_punters):
