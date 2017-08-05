@@ -15,7 +15,7 @@ def offline_call(args, inp):
     #print 'have written back to offline'
     return rwjson.readMessage(x.stdout)
 
-def arena(mapfile, punter_executables):
+def arena(mapfile, punter_executables, print_verbose = lambda x: None):
     num_punters = len(punter_executables)
     states = [0]*len(punter_executables)
     with open(mapfile) as f:
@@ -34,7 +34,7 @@ def arena(mapfile, punter_executables):
         states[punterid] = ready['state']
         all_moves.append({'pass': {'punter': punterid}})
 
-    print '\nstates are', states
+    print_verbose('\nstates are {}'.format(states))
 
     for movenum in range(len(serverstate['siteids'])):
         punterid = movenum % num_punters
@@ -46,21 +46,19 @@ def arena(mapfile, punter_executables):
         result = offline_call(['sh', '-c', punter_executables[punterid]], gameplay)
         if result is None:
             all_moves.append({'pass': {'punter': punterid}})
-            print 'bad result from punter'
+            print_verbose('bad result from punter')
         else:
             # print '\nresult is\n', result
             states[punterid] = result['state']
             del result['state']
             pt.update_nice(serverstate, [result])
             all_moves.append(result)
-        scores = {}
+        scores = []
         for pid in range(num_punters):
             score = pt.score(serverstate, pid)
-            print 'score for', pid, 'is', score
-            if punter_executables[pid] not in scores:
-                scores[punter_executables[pid]] = []
-            scores[punter_executables[pid]].append(score)
-    return scores
+            print_verbose('score for {} is {}'.format(pid, score))
+            scores.append((score, punter_executables[pid]))
+    return list(reversed(sorted(scores)))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compete some punters')
@@ -69,6 +67,7 @@ if __name__ == "__main__":
                         help='the map to use')
     parser.add_argument('programs', metavar='PUNTER', nargs=argparse.REMAINDER,
                         help='the programs to compete')
+    parser.add_argument('--verbose', nargs=0, help='be verbose')
 
     args = parser.parse_args()
     while len(args.programs) < 2:
@@ -78,5 +77,10 @@ if __name__ == "__main__":
         args.map = 'maps/{}.json'.format(args.map)
     print 'using map', args.map
 
-    scores = arena(args.map, args.programs)
+    print_verbose = lambda x: None
+    def actual_print(x):
+        print x
+    if args.verbose:
+        print_verbose = actual_print
+    scores = arena(args.map, args.programs, print_verbose)
     print 'scores are {}'.format(scores)
