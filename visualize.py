@@ -13,26 +13,31 @@ maps = ['examples/setup.sample','maps/sample.json','maps/lambda.json',\
 gameState = ['examples/gameplay']
 
 
-with open(maps[4]) as f:
+with open(maps[1]) as f:
     setup = pt.map_to_nice(readJson(f))
 
-#print setup
-print setup['siteids']
+with open(gameState[0]) as f:
+    handshake = readMessage(f)
+    game = readMessage(f)
+    pt.update_nice(setup,game['move']['moves'])
 
+    
+    
 plt.figure()
 for i in range(len(setup['riverdata'])):
     if setup['riverdata'][i]['claimed'] == None:
         riverid = setup['riverdata'][i]['id']
-#        print riveri
         source,target = setup['riverdata'][riverid]['sites']
-        print target, source, len(setup['sites'])
-        claimedx = [setup['sitemap'][target]['x'],setup['sitemap'][source]['x']]
-        claimedy = [setup['sitemap'][target]['y'],setup['sitemap'][source]['y']]#        
-        plt.plot(claimedx,claimedy,'-b')
+        unclaimedx = [setup['sitemap'][source]['x'],setup['sitemap'][target]['x']]
+        unclaimedy = [setup['sitemap'][source]['y'],setup['sitemap'][target]['y']]#   
+        plt.plot(unclaimedx,unclaimedy,'-b')
     else:
-        ucx = [setup['sites'][target]['x'],setup['sites'][source]['x']]
-        ucy = [setup['sites'][target]['y'],setup['sites'][source]['y']]#
-        plt.plot(ucx,ucy,'-y')
+        riverid = setup['riverdata'][i]['id']
+        source,target = setup['riverdata'][riverid]['sites']
+        claimx = [setup['sitemap'][source]['x'],setup['sites'][target]['x']]
+        claimy = [setup['sites'][source]['y'],setup['sites'][target]['y']]#
+#        print i, ":", ucx[0], ucy[0]," to ",ucx[1],ucy[1]
+        plt.plot(claimx,claimy,'-y')
 for j in range(len(setup['siteids'])):
     
     plt.plot(setup['sites'][j]['x'],setup['sites'][j]['y'],'k.')
