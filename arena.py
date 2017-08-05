@@ -60,3 +60,4 @@ for movenum in range(len(serverstate['siteids'])):
         del result['state']
         pt.update_nice(serverstate, [result])
         all_moves.append(result)
+        print 'score for', punterid, 'is', pt.score(serverstate, punterid)
