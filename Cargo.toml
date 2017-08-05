@@ -1,7 +1,11 @@
 [package]
 name = "punter"
 version = "0.1.0"
-authors = ["droundy <roundyd@physics.oregonstate.edu>"]
+authors = ["David Roundy <roundyd@physics.oregonstate.edu>"]
+
+[lib]
+name = "punter"
+path = "src/lib.rs"
 
 [dependencies]
 

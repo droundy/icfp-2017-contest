@@ -10,7 +10,7 @@ use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
 use std::sync::{Arc,Mutex};
 
-use optimize::Optimizer;
+pub use optimize::Optimizer;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct PunterId(pub usize);
@@ -90,6 +90,7 @@ struct Score {
     score: usize,
 }
 
+#[allow(non_camel_case_types)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum Move {
     claim {
@@ -142,7 +143,7 @@ struct State {
 }
 
 impl State {
-    fn new(s: Setup) -> State {
+    fn new(s: Setup, optimizer: Optimizer) -> State {
         let mut rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
         let mut riverdata: Vec<RiverData> = Vec::new();
         let mut next = 0;
@@ -176,7 +177,7 @@ impl State {
             map: s.map,
             rivermap: rivermap,
             riverdata: riverdata,
-            optimizer: Optimizer::Random,
+            optimizer: optimizer,
         }
     }
     /// Here we use the AI to decide what to do.
@@ -219,7 +220,7 @@ impl State {
     }
 }
 
-fn main() {
+pub fn main_helper(optimizer: Optimizer) {
     // First send our greeting (and we always call ourselves "Xiphon"
     // for now)
     let mut greeting: HashMap<String,String> = HashMap::new();
@@ -250,7 +251,7 @@ fn main() {
     // Now we see what we have, and act on it.
     if let Ok(s) = serde_json::from_slice::<Setup>(&input) {
         //eprintln!("It is a setup!\n");
-        let state = State::new(s);
+        let state = State::new(s, optimizer);
         print_string_with_length(&serde_json::to_string(&Ready {
             punter: state.punter,
             state: state,
