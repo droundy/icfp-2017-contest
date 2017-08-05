@@ -65,6 +65,11 @@ Entry for the 2017 ICFP programming contest
 
 1. An optimizer that picks a random river.
 
+1. An optimizer that creates a Future and focuses specifically on building a
+   path to that future.
+
+1. An optimizer that attempts to build a long path between many mines.
+
 ### Ideas for valuers
 
 1. Possibly a heuristic board valuing function? Several heuristics?
