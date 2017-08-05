@@ -4,7 +4,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-use std::io::Read;
+use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
@@ -148,7 +148,7 @@ impl State {
             match m {
                 &Move::pass {punter: _} => (),
                 &Move::claim { punter, source, target } => {
-                    eprintln!("punter {:?} claims {:?}->{:?}", punter, source, target);
+                    //eprintln!("punter {:?} claims {:?}->{:?}", punter, source, target);
                     for r in self.map.rivers.iter_mut().filter(|r| r.claimed_by.is_none()) {
                         if r.source == source && r.target == target {
                             r.claimed_by = Some(punter);
@@ -173,9 +173,9 @@ fn main() {
     let mut input = vec![b'x'; length];
     match std::io::stdin().read_exact(input.as_mut_slice()) {
         Ok(()) => {
-            eprintln!("{}", String::from_utf8_lossy(&input));
-        }
-        Err(error) => eprintln!("error: {}", error),
+            //eprintln!("{}", String::from_utf8_lossy(&input));
+        },
+        Err(error) => println!("error: {}", error),
     }
 
     // Now we read the real thing!
@@ -183,21 +183,21 @@ fn main() {
     let mut input = vec![b'x'; length];
     match std::io::stdin().read_exact(input.as_mut_slice()) {
         Ok(()) => {
-            eprintln!("{}", String::from_utf8_lossy(&input));
-        }
-        Err(error) => eprintln!("error: {}", error),
+            //eprintln!("{}", String::from_utf8_lossy(&input));
+        },
+        Err(error) => println!("error: {}", error),
     }
 
     // Now we see what we have, and act on it.
     if let Ok(s) = serde_json::from_slice::<Setup>(&input) {
-        eprintln!("It is a setup!\n");
+        //eprintln!("It is a setup!\n");
         let state = State::new(s);
         print_string_with_length(&serde_json::to_string(&Ready {
             punter: state.punter,
             state: state,
         }).unwrap());
     } else if let Ok(play) = serde_json::from_slice::<Gameplay>(&input) {
-        println!("It is a play!");
+        //println!("It is a play!");
         let mut state = play.state;
         state.apply_moves(play.move_);
         let mv = state.play();
@@ -208,13 +208,14 @@ fn main() {
         let totalstring = format!("{}, \"state\": {}}}", movestr, statestr);
         print_string_with_length(&totalstring);
     } else {
-        eprintln!("It is neither");
+        println!("It is neither");
         serde_json::from_slice::<Gameplay>(&input).unwrap();
     }
 }
 
 fn print_string_with_length(s: &str) {
     print!("{}:{}", s.len(), s);
+    std::io::stdout().flush().ok();
 }
 
 fn read_integer_to_colon() -> usize {
