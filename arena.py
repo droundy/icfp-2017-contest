@@ -55,9 +55,10 @@ for movenum in range(len(serverstate['siteids'])):
         all_moves.append({'pass': {'punter': punterid}})
         print 'bad result from punter'
     else:
-        print '\nresult is\n', result
+        # print '\nresult is\n', result
         states[punterid] = result['state']
         del result['state']
         pt.update_nice(serverstate, [result])
         all_moves.append(result)
-        print 'score for', punterid, 'is', pt.score(serverstate, punterid)
+    for pid in range(num_punters):
+        print 'score for', pid, 'is', pt.score(serverstate, pid)

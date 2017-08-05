@@ -12,6 +12,7 @@ impl Optimizer {
                 let available: Vec<_> = state.riverdata.iter()
                     .filter(|r| r.claimed.is_none()).cloned().collect();
                 if available.len() > 0 {
+                    //eprintln!("\navailable: {:?}", &available);
                     if let Ok(mut plan) = bestlaidplan.lock() {
                         if plan.value < 0.0 {
                             *plan = Plan {

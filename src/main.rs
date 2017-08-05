@@ -147,10 +147,15 @@ impl State {
         let mut riverdata: Vec<RiverData> = Vec::new();
         let mut next = 0;
         for r in s.map.rivers.iter() {
+            let id = RiverId(next);
+            next += 1;
+            riverdata.push(RiverData {
+                id: id,
+                sites: [r.target, r.source],
+                claimed: None,
+            });
             for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
                 let mut had_it = false;
-                let id = RiverId(next);
-                next += 1;
                 if let Some(child) = rivermap.get_mut(&site) {
                     child.insert(other, id);
                     had_it = true;
@@ -160,11 +165,6 @@ impl State {
                     child.insert(other, id);
                     rivermap.insert(site, child);
                 }
-                riverdata.push(RiverData {
-                    id: id,
-                    sites: [r.target, r.source],
-                    claimed: None,
-                });
             }
         }
         // FIXME eventually we want some AI in here, to make the most
@@ -208,9 +208,11 @@ impl State {
                 &Move::claim { punter, source, target } => {
                     let rid = self.rivermap[&source][&target];
                     if self.riverdata[rid.0].claimed.is_none() {
+                        //eprintln!("{:?} got the river {:?}!", punter, rid);
                         self.riverdata[rid.0].claimed = Some(punter);
                     }
-                    //eprintln!("punter {:?} claims {:?}->{:?}", punter, source, target);
+                    //eprintln!("punter {:?} claims {:?}->{:?} aka {:?}",
+                    //          punter, source, target, rid);
                 },
             }
         }
