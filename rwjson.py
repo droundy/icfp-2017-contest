@@ -16,6 +16,9 @@ def readMessage(f):
     length = int(length)
     return json.loads(f.read(length))
 
+def readJson(f):
+    return json.loads(f.read())
+
 # Read a message from a network socket
 def recvMessage(s):
     length = ''
