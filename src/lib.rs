@@ -90,15 +90,16 @@ struct Score {
     score: usize,
 }
 
-#[allow(non_camel_case_types)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum Move {
-    claim {
+    #[serde(rename = "claim")]
+    Claim {
         punter: PunterId,
         source: SiteId,
         target: SiteId,
     },
-    pass {
+    #[serde(rename = "pass")]
+    Pass {
         punter: PunterId
     },
 }
@@ -191,7 +192,7 @@ impl State {
         std::thread::sleep(std::time::Duration::from_millis(900));
         let final_plan = bestlaidplan.lock().unwrap();
         let sites = self.riverdata[final_plan.river.0].sites;
-        Move::claim {
+        Move::Claim {
             punter: self.punter,
             source: sites[0],
             target: sites[1],
@@ -205,8 +206,8 @@ impl State {
     fn apply_moves(&mut self, moves: Moves) {
         for m in moves.moves.iter() {
             match m {
-                &Move::pass {punter: _} => (),
-                &Move::claim { punter, source, target } => {
+                &Move::Pass {punter: _} => (),
+                &Move::Claim { punter, source, target } => {
                     let rid = self.rivermap[&source][&target];
                     if self.riverdata[rid.0].claimed.is_none() {
                         //eprintln!("{:?} got the river {:?}!", punter, rid);
