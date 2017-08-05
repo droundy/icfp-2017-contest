@@ -4,11 +4,13 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-mod randopt;
+mod optimize;
 
 use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
 use std::sync::{Arc,Mutex};
+
+use optimize::Optimizer;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct PunterId(pub usize);
@@ -107,10 +109,6 @@ struct RiverData {
     claimed: Option<PunterId>,
 }
 
-trait Optimizer : Default {
-    fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>);
-}
-
 trait Measurer : Default {
     fn measure(&mut self, state: &State) -> f64;
 }
@@ -140,6 +138,7 @@ struct State {
     rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>>,
     #[serde(default)]
     riverdata: Vec<RiverData>,
+    optimizer: Optimizer,
 }
 
 impl State {
@@ -177,13 +176,28 @@ impl State {
             map: s.map,
             rivermap: rivermap,
             riverdata: riverdata,
+            optimizer: Optimizer::Random,
         }
     }
     /// Here we use the AI to decide what to do.
     fn play(&mut self) -> Move {
-        Move::pass {
+        let bestlaidplan = Arc::new(Mutex::new(Plan::new()));
+        let otherplan = Arc::clone(&bestlaidplan);
+        let state_copy = self.clone();
+        std::thread::spawn(move || {
+            state_copy.optimizer.optimize(&state_copy, otherplan);
+        });
+        std::thread::sleep(std::time::Duration::from_millis(900));
+        let final_plan = bestlaidplan.lock().unwrap();
+        let sites = self.riverdata[final_plan.river.0].sites;
+        Move::claim {
             punter: self.punter,
+            source: sites[0],
+            target: sites[1],
         }
+        // Move::pass {
+        //     punter: self.punter,
+        // }
     }
     /// Here we adjust the State based on the moves that we were told
     /// about by the server.
