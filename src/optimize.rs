@@ -6,7 +6,7 @@ pub enum Optimizer {
 }
 
 impl Optimizer {
-    fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>) {
+    pub fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>) {
         match self {
             &Optimizer::Random => {
                 let available: Vec<_> = state.riverdata.iter()

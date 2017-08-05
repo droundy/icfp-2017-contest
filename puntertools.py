@@ -32,9 +32,11 @@ def update_nice(nice, moves):
             continue
         try:
             c = move['claim']
+            print 'claim is', c
             riverid = nice['rivermap'][c['source']][c['target']]
-            if nice['riverdata']['claimed'] is None:
-                nice['riverdata']['claimed'] = c['punter']
+            print 'riverid is', riverid
+            if nice['riverdata'][riverid]['claimed'] is None:
+                nice['riverdata'][riverid]['claimed'] = c['punter']
         except:
             print 'invalid move:', move
 
@@ -54,13 +56,13 @@ def distances(nice, mineid):
     return distances
 
 def punter_reaches(nice, mineid, punterid):
-    reached = {}
+    reached = set([])
     old_sites = {mineid}
     while len(old_sites) > 0:
         new_sites = set([])
         for site in old_sites:
-            for neighbor in  nice['rivermap'][site]:
-                if nice['riverdata'][nice['rivermap'][site][neighbor]]['claimed'] == punterid:
+            for neighbor in nice['rivermap'][site]:
+                if neighbor not in reached and nice['riverdata'][nice['rivermap'][site][neighbor]]['claimed'] == punterid:
                     reached.add(neighbor)
                     new_sites.add(neighbor)
         old_sites = new_sites

@@ -181,9 +181,23 @@ impl State {
     }
     /// Here we use the AI to decide what to do.
     fn play(&mut self) -> Move {
-        Move::pass {
+        let bestlaidplan = Arc::new(Mutex::new(Plan::new()));
+        let otherplan = Arc::clone(&bestlaidplan);
+        let state_copy = self.clone();
+        std::thread::spawn(move || {
+            state_copy.optimizer.optimize(&state_copy, otherplan);
+        });
+        std::thread::sleep(std::time::Duration::from_millis(900));
+        let final_plan = bestlaidplan.lock().unwrap();
+        let sites = self.riverdata[final_plan.river.0].sites;
+        Move::claim {
             punter: self.punter,
+            source: sites[0],
+            target: sites[1],
         }
+        // Move::pass {
+        //     punter: self.punter,
+        // }
     }
     /// Here we adjust the State based on the moves that we were told
     /// about by the server.
