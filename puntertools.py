@@ -1,6 +1,10 @@
 
 def map_to_nice(m):
     nice = {}
+    sitemap = {}
+    for s in m['sites']:
+        sitemap[s['id']] = s
+    nice['sitemap'] = sitemap
     nice['sites'] = m['sites']
     nice['siteids'] = []
     for s in m['sites']:

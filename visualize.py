@@ -3,54 +3,41 @@ import json
 import csv
 import numpy as np
 import matplotlib.pyplot as plt
-from rwjson import readMessage,writeMessage
+import puntertools as pt
+from rwjson import readMessage,writeMessage,readJson
 
 
 maps = ['examples/setup.sample','maps/sample.json','maps/lambda.json',\
         'maps/Sierpinski-triangle.json','maps/tube.json','maps/boston-sparse.json']
         
-gameState = ['examples/gametest']
+gameState = ['examples/gameplay']
 
 
-with open(maps[0]) as f:
-    handshake = readMessage(f)
-    setup = readMessage(f)
+with open(maps[4]) as f:
+    setup = pt.map_to_nice(readJson(f))
 
-    mines = setup['map']['mines']
-    sites = setup['map']['sites']
-    rivers = setup['map']['rivers']
-    
-with open(gameState[0]) as f:
-    handshake = readMessage(f)
-    setup = readMessage(f)
-    oppClaim = setup['move']['moves'][0]['claim']# The integer represents the moves made
-    source = oppClaim['source']
-    target = oppClaim['target']
-
-
-message = writeMessage(handshake)
-print message
-
-riverClaimed = []
-for i in range(len(rivers)):
-    if target == rivers[i]['target'] and source ==rivers[i]['source']:
-        riverClaimed.append(i)
-
-
+#print setup
+print setup['siteids']
 
 plt.figure()
-for i in range(len(rivers)):
-    if i in riverClaimed:
-        C = [sites[rivers[i]['target']]['x'],sites[rivers[i]['source']]['x']]
-        D = [sites[rivers[i]['target']]['y'],sites[rivers[i]['source']]['y']]
-        plt.plot(C,D,'-y')
+for i in range(len(setup['riverdata'])):
+    if setup['riverdata'][i]['claimed'] == None:
+        riverid = setup['riverdata'][i]['id']
+#        print riveri
+        source,target = setup['riverdata'][riverid]['sites']
+        print target, source, len(setup['sites'])
+        claimedx = [setup['sitemap'][target]['x'],setup['sitemap'][source]['x']]
+        claimedy = [setup['sitemap'][target]['y'],setup['sitemap'][source]['y']]#        
+        plt.plot(claimedx,claimedy,'-b')
     else:
-        A = [sites[rivers[i]['target']]['x'],sites[rivers[i]['source']]['x']]
-        B = [sites[rivers[i]['target']]['y'],sites[rivers[i]['source']]['y']]
-        plt.plot(A,B,'-b')
-for j in range(len(sites)):
-    plt.plot(sites[j]['x'],sites[j]['y'],'k.')
+        ucx = [setup['sites'][target]['x'],setup['sites'][source]['x']]
+        ucy = [setup['sites'][target]['y'],setup['sites'][source]['y']]#
+        plt.plot(ucx,ucy,'-y')
+for j in range(len(setup['siteids'])):
+    
+    plt.plot(setup['sites'][j]['x'],setup['sites'][j]['y'],'k.')
 
-for k in range(len(mines)):
-    plt.plot(sites[mines[k]]['x'],sites[mines[k]]['y'],'-ro')
+for k in range(len(setup['mines'])):
+    mineLoc = setup['mines'][k]
+    plt.plot(setup['sites'][mineLoc]['x'],setup['sites'][mineLoc]['y'],'-ro')
 plt.show()
