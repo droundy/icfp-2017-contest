@@ -1,20 +1,24 @@
+#!/usr/bin/env python2
 import json
 import csv
 import numpy as np
 
-
-test_file = open('examples/setup.sample')
-
-stuff = ['map','sites','rivers','mines']
-
-print stuff[2]
+class Empty:
+	pass
 
 with open('examples/setup.sample') as f:
+	#~ contents = f.read()
 	for l in f:
-		parsed_json = json.loads(l)		
+		setup = json.loads(l)
+		setup['map']['rivers']
+		newsetup = Empty()
+		newsetup.map = setup['map']
+		
+		print parsed_json	
 		parsed_map = parsed_json['map']
 		parsed_sites = parsed_map['sites']
 		mines = parsed_map['mines']
+
 		parsed_rivers = parsed_map['rivers']
 		
 		sites = np.zeros((len(parsed_sites),3))
@@ -31,16 +35,23 @@ with open('examples/setup.sample') as f:
 			rivers[river,0] = river_info['source']
 			rivers[river,1] = river_info['target']
 
-			
-#~ test_file = open('gamestate.txt' , 'w')
-#~ for item in sites:
-	#~ test_file.write("%s\n" % item)
-	#~ test_file.write("\n")
+
+
 		
-print sites
-print rivers
+#~ print sites
+#~ print rivers
 print mines
 
+output = json.dumps({"mines":mines},sort_keys = True)
 
 
+test_file = open('gamestate1.txt' , 'w')
+for item in output:
+	test_file.write("%s" % item)
+
+
+with open('gamestate.txt') as f:
+	contents = f.read()
+
+print contents
 
