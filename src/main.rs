@@ -17,15 +17,6 @@ struct SiteId(pub usize);
 struct RiverId(pub usize);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct State {
-    punter: PunterId,
-    punters: usize,
-    map: Map,
-    #[serde(default)]
-    rivers_from: HashMap<SiteId,HashMap<SiteId,RiverId>>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Ready {
     punter: PunterId,
     state: State,
@@ -108,21 +99,48 @@ enum Move {
     },
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct RiverData {
+    id: RiverId,
+    sites: [SiteId; 2],
+    claimed: Option<PunterId>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct State {
+    punter: PunterId,
+    punters: usize,
+    map: Map,
+    #[serde(default)]
+    rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>>,
+    #[serde(default)]
+    riverdata: HashMap<RiverId, RiverData>,
+}
+
 impl State {
     fn new(s: Setup) -> State {
-        let mut rivers_from: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
+        let mut rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
+        let mut riverdata: HashMap<RiverId, RiverData> = HashMap::new();
+        let mut next = 0;
         for r in s.map.rivers.iter() {
             for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
                 let mut had_it = false;
-                if let Some(child) = rivers_from.get_mut(&site) {
-                    child.insert(other, RiverId(0));
+                let id = RiverId(next);
+                next += 1;
+                if let Some(child) = rivermap.get_mut(&site) {
+                    child.insert(other, id);
                     had_it = true;
                 }
                 if !had_it {
                     let mut child = HashMap::new();
-                    child.insert(other, RiverId(0));
-                    rivers_from.insert(site, child);
+                    child.insert(other, id);
+                    rivermap.insert(site, child);
                 }
+                riverdata.insert(id, RiverData {
+                    id: id,
+                    sites: [r.target, r.source],
+                    claimed: None,
+                });
             }
         }
         // FIXME eventually we want some AI in here, to make the most
@@ -132,7 +150,8 @@ impl State {
             punter: s.punter,
             punters: s.punters,
             map: s.map,
-            rivers_from: rivers_from,
+            rivermap: rivermap,
+            riverdata: riverdata,
         }
     }
     /// Here we use the AI to decide what to do.
