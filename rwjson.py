@@ -9,6 +9,8 @@ def readMessage(f):
 
     while (True):       # read into f
         c = f.read(1)
+        if len(c) == 0:
+            return None
         if c == ':':
             break       # stop reading if colon
         length += c

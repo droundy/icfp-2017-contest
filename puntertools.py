@@ -25,3 +25,15 @@ def map_to_nice(m):
     nice['rivermap'] = rivermap
     nice['riverdata'] = riverdata
     return nice
+
+def update_nice(nice, moves):
+    for move in moves:
+        if 'pass' in move:
+            continue
+        try:
+            c = move['claim']
+            riverid = nice['rivermap'][c['source']][c['target']]
+            if nice['riverdata']['claimed'] is None:
+                nice['riverdata']['claimed'] = c['punter']
+        except:
+            print 'invalid move:', move
