@@ -4,11 +4,13 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-mod randopt;
+mod optimize;
 
 use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
 use std::sync::{Arc,Mutex};
+
+use optimize::Optimizer;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct PunterId(pub usize);
@@ -107,10 +109,6 @@ struct RiverData {
     claimed: Option<PunterId>,
 }
 
-trait Optimizer : Default {
-    fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>);
-}
-
 trait Measurer : Default {
     fn measure(&mut self, state: &State) -> f64;
 }
@@ -140,6 +138,7 @@ struct State {
     rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>>,
     #[serde(default)]
     riverdata: Vec<RiverData>,
+    optimizer: Optimizer,
 }
 
 impl State {
@@ -177,6 +176,7 @@ impl State {
             map: s.map,
             rivermap: rivermap,
             riverdata: riverdata,
+            optimizer: Optimizer::Random,
         }
     }
     /// Here we use the AI to decide what to do.
