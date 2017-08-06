@@ -67,7 +67,7 @@ if __name__ == "__main__":
                         help='the map to use')
     parser.add_argument('programs', metavar='PUNTER', nargs=argparse.REMAINDER,
                         help='the programs to compete')
-    parser.add_argument('--verbose', nargs=0, help='be verbose')
+    parser.add_argument('--verbose', action='store_true', help='be verbose')
 
     args = parser.parse_args()
     while len(args.programs) < 2:

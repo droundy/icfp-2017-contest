@@ -41,8 +41,8 @@ def battle(max_size, programs):
         for pair in triples:
             scores = arena.arena(mapfile, pair)
             ranks = rank_scores(scores)
-            for p,v in ranks:
-                cumulative[p] += v
+            for p in ranks:
+                cumulative[p] += ranks[p]
         print 'cumulative so far:', cumulative
     print 'cumulative score:', cumulative
 
