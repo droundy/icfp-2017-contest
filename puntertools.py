@@ -36,9 +36,9 @@ def update_nice(nice, moves):
             continue
         try:
             c = move['claim']
-            print 'claim is', c
+            # print 'claim is', c
             riverid = nice['rivermap'][c['source']][c['target']]
-            print 'riverid is', riverid
+            #print 'riverid is', riverid
             if nice['riverdata'][riverid]['claimed'] is None:
                 nice['riverdata'][riverid]['claimed'] = c['punter']
         except:

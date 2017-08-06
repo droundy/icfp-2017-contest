@@ -3,6 +3,7 @@ extern crate serde_derive;
 
 extern crate serde;
 extern crate serde_json;
+extern crate rand;
 
 mod optimize;
 
@@ -10,7 +11,7 @@ use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
 use std::sync::{Arc,Mutex};
 
-use optimize::Optimizer;
+pub use optimize::Optimizer;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct PunterId(pub usize);
@@ -92,12 +93,14 @@ struct Score {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum Move {
-    claim {
+    #[serde(rename = "claim")]
+    Claim {
         punter: PunterId,
         source: SiteId,
         target: SiteId,
     },
-    pass {
+    #[serde(rename = "pass")]
+    Pass {
         punter: PunterId
     },
 }
@@ -142,7 +145,7 @@ struct State {
 }
 
 impl State {
-    fn new(s: Setup) -> State {
+    fn new(s: Setup, optimizer: Optimizer) -> State {
         let mut rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
         let mut riverdata: Vec<RiverData> = Vec::new();
         let mut next = 0;
@@ -176,7 +179,7 @@ impl State {
             map: s.map,
             rivermap: rivermap,
             riverdata: riverdata,
-            optimizer: Optimizer::Random,
+            optimizer: optimizer,
         }
     }
     /// Here we use the AI to decide what to do.
@@ -190,7 +193,7 @@ impl State {
         std::thread::sleep(std::time::Duration::from_millis(900));
         let final_plan = bestlaidplan.lock().unwrap();
         let sites = self.riverdata[final_plan.river.0].sites;
-        Move::claim {
+        Move::Claim {
             punter: self.punter,
             source: sites[0],
             target: sites[1],
@@ -204,8 +207,8 @@ impl State {
     fn apply_moves(&mut self, moves: Moves) {
         for m in moves.moves.iter() {
             match m {
-                &Move::pass {punter: _} => (),
-                &Move::claim { punter, source, target } => {
+                &Move::Pass {punter: _} => (),
+                &Move::Claim { punter, source, target } => {
                     let rid = self.rivermap[&source][&target];
                     if self.riverdata[rid.0].claimed.is_none() {
                         //eprintln!("{:?} got the river {:?}!", punter, rid);
@@ -219,7 +222,7 @@ impl State {
     }
 }
 
-fn main() {
+pub fn main_helper(optimizer: Optimizer) {
     // First send our greeting (and we always call ourselves "Xiphon"
     // for now)
     let mut greeting: HashMap<String,String> = HashMap::new();
@@ -250,7 +253,7 @@ fn main() {
     // Now we see what we have, and act on it.
     if let Ok(s) = serde_json::from_slice::<Setup>(&input) {
         //eprintln!("It is a setup!\n");
-        let state = State::new(s);
+        let state = State::new(s, optimizer);
         print_string_with_length(&serde_json::to_string(&Ready {
             punter: state.punter,
             state: state,
