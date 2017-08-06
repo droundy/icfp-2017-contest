@@ -1,6 +1,7 @@
 use super::*;
 
 use rand::random;
+use rand::{thread_rng, Rng};
 use std::collections::HashSet;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -33,34 +34,10 @@ impl Optimizer {
                 }
             },
             &Optimizer::Greedy => {
-                let available: Vec<_> = state.riverdata.iter()
-                    .filter(|r| r.claimed.is_none()).cloned().collect();
-                let mut state = state.clone();
-                let mut bestscore = -1e200;
-                if let Ok(mut plan) = bestlaidplan.lock() {
-                    bestscore = plan.value;
-                }
-                for a in available {
-                    // experiment with claiming this river for ourselves.
-                    state.riverdata[a.id.0].claimed = Some(state.punter);
-                    let score = Rater::Score.score(&state);
-                    if score > bestscore {
-                        bestscore = score;
-                        if let Ok(mut plan) = bestlaidplan.lock() {
-                            if score > plan.value {
-                                *plan = Plan {
-                                    value: score,
-                                    river: a.id,
-                                    why: format!("greedy with score {}", score),
-                                };
-                            } else {
-                                bestscore = plan.value;
-                            }
-                        }
-                    }
-                    // return to actual current state.
-                    state.riverdata[a.id.0].claimed = None;
-                }
+                let mut available: Vec<_> = state.riverdata.iter()
+                    .filter(|r| r.claimed.is_none()).map(|r| r.id).collect();
+                thread_rng().shuffle(&mut available);
+                pick_highest_rated(state, available, StateRater::Score, bestlaidplan);
             },
             &Optimizer::InitialMine => {
                 let minerivers: Vec<RiverData> = state.map.mines.iter()
@@ -87,14 +64,14 @@ impl Optimizer {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum Rater {
+pub enum StateRater {
     Score,
 }
 
-impl Rater {
+impl StateRater {
     fn score(&self, state: &State) -> f64 {
         match self {
-            &Rater::Score => {
+            &StateRater::Score => {
                 let mut totalscore = 0;
                 for &m in state.map.mines.iter() {
                     let d = distances(state, m);
@@ -147,4 +124,34 @@ fn punter_reaches(state: &State, mineid: SiteId) -> HashSet<SiteId> {
         old_sites = new_sites;
     }
     reached
+}
+
+fn pick_highest_rated(state: &State, options: Vec<RiverId>, rater: StateRater,
+                      bestlaidplan: Arc<Mutex<Plan>>) {
+    let mut state = state.clone();
+    let mut bestscore = -1e200;
+    if let Ok(plan) = bestlaidplan.lock() {
+        bestscore = plan.value;
+    }
+    for rid in options {
+        // experiment with claiming this river for ourselves.
+        state.riverdata[rid.0].claimed = Some(state.punter);
+        let score = rater.score(&state);
+        if score > bestscore {
+            bestscore = score;
+            if let Ok(mut plan) = bestlaidplan.lock() {
+                if score > plan.value {
+                    *plan = Plan {
+                        value: score,
+                        river: rid,
+                        why: format!("rated {:?} with score {}", rater, score),
+                    };
+                } else {
+                    bestscore = plan.value;
+                }
+            }
+        }
+        // return to actual current state.
+        state.riverdata[rid.0].claimed = None;
+    }
 }
