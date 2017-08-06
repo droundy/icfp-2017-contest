@@ -25,7 +25,6 @@ def visualize_board(setup):
         mineLoc = setup['mines'][k]
         plt.plot(setup['sites'][mineLoc]['x'],setup['sites'][mineLoc]['y'],'-ro')
 
-
 if __name__ == "__main__":
     with open('examples/gameplay0.txt') as f:
         handshake = readMessage(f)
