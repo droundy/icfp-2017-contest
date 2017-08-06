@@ -111,6 +111,8 @@ pub enum StateRater {
     Scale(Box<StateRater>,f64),
     /// checks two moves ahead
     NextMove(Box<StateRater>, f64),
+    /// checks two moves ahead
+    LookAhead(Box<StateRater>, usize),
 }
 
 impl StateRater {
@@ -203,6 +205,31 @@ impl StateRater {
                 // eprintln!("secondworst: {} worst: {}", secondworstbest, worstbest);
                 initial_score + (secondworstbest - initial_score)/scaledown
             },
+            &StateRater::LookAhead(ref rater, lookahead) => {
+                let mut state = state.clone();
+                let initial_score = rater.score(&state);
+                let mut best = -1e200;
+                let avail = rivers_available(&state);
+                let options = plans_of_length(&avail, lookahead);
+                for plan in &options {
+                    // experiment with claiming this river for ourselves.
+                    for &rid in plan.iter() {
+                        state.riverdata[rid.0].claimed = Some(state.punter);
+                    }
+                    let score = if lookahead <= 1 {
+                        rater.score(&state)
+                    } else {
+                        StateRater::LookAhead(rater.clone(), lookahead-1).score(&state)
+                    };
+                    if score > best {
+                        best = score;
+                    }
+                    for &rid in plan.iter() {
+                        state.riverdata[rid.0].claimed = None;
+                    }
+                }
+                initial_score + (best - initial_score)/(lookahead as f64 + 1.0)
+            },
             &StateRater::Add(ref a, ref b) => {
                 let ascore = a.score(state);
                 let bscore = b.score(state);
@@ -238,6 +265,16 @@ impl std::ops::Div<f64> for StateRater {
     type Output = StateRater;
     fn div(self, scaledown: f64) -> StateRater {
         StateRater::NextMove(Box::new(self), scaledown)
+    }
+}
+
+impl std::ops::Not for StateRater {
+    type Output = StateRater;
+    fn not(self) -> StateRater {
+        match self {
+            StateRater::LookAhead(r,n) => StateRater::LookAhead(r,n+1),
+            r => StateRater::LookAhead(Box::new(r), 1),
+        }
     }
 }
 
@@ -401,4 +438,28 @@ fn new_mines(state: &State) -> Vec<SiteId> {
     thread_rng().shuffle(&mut mines);
     SiteRater::Farthest.sort(&state, &mut mines);
     mines
+}
+
+const MAX_ALLOWED_SIZE: usize = 100*1024;
+
+fn plans_of_length(rivers: &[RiverId], len: usize) -> Vec<Vec<RiverId>> {
+    if len == 1 {
+        return rivers.iter().map(|&r| vec![r]).collect();
+    }
+    let shorter_plans = plans_of_length(rivers, len-1);
+    if shorter_plans.len()*rivers.len() > MAX_ALLOWED_SIZE {
+        return Vec::new();
+    }
+    let mut output = Vec::with_capacity(rivers.len()*shorter_plans.len());
+    for r in rivers {
+        for plan in shorter_plans.iter() {
+            if plan[0].0 > r.0 { // enforce sorted plans!
+                let mut v = Vec::with_capacity(len);
+                v.push(*r);
+                v.extend(plan);
+                output.push(v);
+            }
+        }
+    }
+    output
 }
