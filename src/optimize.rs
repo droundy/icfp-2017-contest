@@ -10,14 +10,28 @@ pub enum Optimizer {
     Random,
     Greedy(StateRater),
     AllMines(StateRater),
-    Parallel(Box<StateRater>, Box<StateRater>),
+    Parallel(Box<Optimizer>, Box<Optimizer>),
     InitialMine(StateRater),
+}
+impl std::ops::Add for Optimizer {
+    type Output = Optimizer;
+    fn add(self, other: Optimizer) -> Optimizer {
+        Optimizer::Parallel(Box::new(self), Box::new(other))
+    }
 }
 
 impl Optimizer {
     pub(crate) fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>) {
         match self {
             &Optimizer::Parallel(ref a, ref b) => {
+                let otherplan = Arc::clone(&bestlaidplan);
+                let state_copy = state.clone();
+                let b = b.clone();
+                std::thread::spawn(move || {
+                    let state = state_copy;
+                    b.optimize(&state, otherplan);
+                });
+                a.optimize(state, bestlaidplan);
             },
             &Optimizer::Random => {
                 let available: Vec<_> = state.riverdata.iter()

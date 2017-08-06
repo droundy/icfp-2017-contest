@@ -190,7 +190,7 @@ impl State {
         std::thread::spawn(move || {
             state_copy.optimizer.optimize(&state_copy, otherplan);
         });
-        std::thread::sleep(std::time::Duration::from_millis(90));
+        std::thread::sleep(std::time::Duration::from_millis(900));
         let final_plan = bestlaidplan.lock().unwrap();
         let sites = self.riverdata[final_plan.river.0].sites;
         Move::Claim {
