@@ -1,3 +1,8 @@
+*~
+*#
+.#*
+Cargo.lock
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -99,3 +104,5 @@ ENV/
 
 # mypy
 .mypy_cache/
+/target/
+**/*.rs.bk
