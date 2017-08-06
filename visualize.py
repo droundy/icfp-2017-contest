@@ -3,8 +3,11 @@ import matplotlib.pyplot as plt
 import puntertools as pt
 from rwjson import readMessage,writeMessage,readJson
 
+<<<<<<< HEAD
 farg = ['--r',':m','-y','-c','-w']
 
+=======
+>>>>>>> e0efb5a80ff22dae32532703f616f436711bf43e
 def visualize_board(setup):
     for i in range(len(setup['riverdata'])):
         if setup['riverdata'][i]['claimed'] == None:
@@ -24,6 +27,7 @@ def visualize_board(setup):
     for k in range(len(setup['mines'])):
         mineLoc = setup['mines'][k]
         plt.plot(setup['sites'][mineLoc]['x'],setup['sites'][mineLoc]['y'],'-ro')
+<<<<<<< HEAD
 
 
 if __name__ == "__main__":
@@ -53,3 +57,27 @@ if __name__ == "__main__":
 
         visualize_board(setup)
     plt.show()
+=======
+        
+with open('examples/gameplay0.txt') as f:
+    handshake = readMessage(f)
+    messageIn = readMessage(f)
+    setup = pt.map_to_nice(messageIn['move']['state']['map'])
+    R = len(setup['riverdata'])
+
+farg = ['-y','-m','-m','-y','-w']
+    
+for turn in range(R):
+    gameState = ['examples/gameplay'+str(turn)+'.txt']
+    
+    with open(gameState[0]) as f:
+        handshake = readMessage(f)
+        game = readMessage(f)
+        pt.update_nice(setup,game['move']['moves'])
+        punter = game['move']['moves'][0]['claim']['punter']
+    visualize_board(setup)
+
+plt.show()
+
+
+>>>>>>> e0efb5a80ff22dae32532703f616f436711bf43e
