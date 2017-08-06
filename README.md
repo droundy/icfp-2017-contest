@@ -70,6 +70,8 @@ Entry for the 2017 ICFP programming contest
 
 1. An optimizer that attempts to build a long path between many mines.
 
+1. An optimizer that identifies and prioritizes "bottlenecks".
+
 ### Ideas for valuers
 
 1. Possibly a heuristic board valuing function? Several heuristics?
