@@ -5,7 +5,10 @@ from rwjson import readMessage,writeMessage,readJson
 
 farg = ['--r',':m','-y','-c','-w']
 
-def visualize_board(setup):
+def visualize_board(setup, punter_names=None):
+    if punter_names is None:
+        punter_names = range(100)
+    have_legend = set([])
     for i in range(len(setup['riverdata'])):
         if setup['riverdata'][i]['claimed'] == None:
             riverid = setup['riverdata'][i]['id']
@@ -18,7 +21,14 @@ def visualize_board(setup):
             source,target = setup['riverdata'][riverid]['sites']
             claimx = [setup['sitemap'][source]['x'],setup['sites'][target]['x']]
             claimy = [setup['sites'][source]['y'],setup['sites'][target]['y']]
-            plt.plot(claimx,claimy,farg[setup['riverdata'][i]['claimed']],linewidth = 6)
+            whoclaimed = setup['riverdata'][i]['claimed']
+            if whoclaimed in have_legend:
+                plt.plot(claimx,claimy,farg[whoclaimed],linewidth = 6)
+            else:
+                # need legend for this
+                plt.plot(claimx,claimy,farg[whoclaimed],linewidth = 6,
+                         label=punter_names[whoclaimed])
+                have_legend.add(whoclaimed)
     for j in range(len(setup['siteids'])):
         plt.plot(setup['sites'][j]['x'],setup['sites'][j]['y'],'k.',
                  markersize=10)
@@ -26,6 +36,7 @@ def visualize_board(setup):
         mineLoc = setup['mines'][k]
         plt.plot(setup['sites'][mineLoc]['x'],setup['sites'][mineLoc]['y'],'ro',
                  markersize=10)
+    plt.legend(loc='best')
 
 if __name__ == "__main__":
     with open('examples/gameplay0.txt') as f:

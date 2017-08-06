@@ -66,7 +66,7 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None,
             all_moves.append(result)
             if vis:
                 plt.cla()
-                visualize.visualize_board(serverstate)
+                visualize.visualize_board(serverstate, punter_executables)
                 plt.draw()
                 plt.pause(1e-6)
         scores = []

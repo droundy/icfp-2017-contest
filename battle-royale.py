@@ -35,13 +35,13 @@ def battle(max_size, programs):
             continue
         print '\ntesting map', mapfile, 'with size', len(themap['rivers'])
         for pair in pairs:
-            scores = arena.arena(mapfile, pair)
+            scores = arena.arena(mapfile, pair, vis=True)
             ranks = rank_scores(scores)
             print 'ranks are', ranks, 'and scores are', scores
             for p in ranks:
                 cumulative[p] += ranks[p]
         for pair in triples:
-            scores = arena.arena(mapfile, pair)
+            scores = arena.arena(mapfile, pair, vis=True)
             ranks = rank_scores(scores)
             for p in ranks:
                 cumulative[p] += ranks[p]
