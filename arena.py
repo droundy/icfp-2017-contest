@@ -43,6 +43,7 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None,
 
     print_verbose('\nstates are {}'.format(states))
     if vis:
+        plt.clf()
         visualize.visualize_board(serverstate)
         plt.draw()
         plt.pause(1e-6)

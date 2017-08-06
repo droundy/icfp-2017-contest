@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 from __future__ import division
 
-import sys, os, subprocess, argparse, glob, itertools
+import sys, os, subprocess, argparse, glob, itertools, random
 
 import arena, rwjson
 
@@ -19,34 +19,39 @@ def battle(max_size, programs):
     pairs = set([])
     triples = set([])
     cumulative = {}
+    games = {}
     for p in programs:
         cumulative[p] = 0
+        games[p] = 0
     for p in permutations:
         pairs.add(tuple(sorted(p[:2])))
         pairs.add(tuple(reversed(sorted(p[:2]))))
         if len(programs) > 2:
             for pperm in itertools.permutations(p[:3]):
                 triples.add(tuple(pperm))
+    jobs = []
     for mapfile in glob.glob('maps/*.json'):
         with open(mapfile) as f:
             themap = rwjson.readJson(f)
         if len(themap['rivers']) > max_size:
             print mapfile,'is too long with size', len(themap['rivers'])
             continue
-        print '\ntesting map', mapfile, 'with size', len(themap['rivers'])
-        for pair in pairs:
+        for pair in pairs.union(triples):
+            jobs.append((mapfile, pair))
+    random.shuffle(jobs)
+    for mapfile, pair in jobs:
+        with open(mapfile) as f:
+            themap = rwjson.readJson(f)
             scores = arena.arena(mapfile, pair, vis=True)
             ranks = rank_scores(scores)
-            print 'ranks are', ranks, 'and scores are', scores
             for p in ranks:
                 cumulative[p] += ranks[p]
-        for pair in triples:
-            scores = arena.arena(mapfile, pair, vis=True)
-            ranks = rank_scores(scores)
-            for p in ranks:
-                cumulative[p] += ranks[p]
-        print 'cumulative so far:', cumulative
-    print 'cumulative score:', cumulative
+                games[p] += 1
+            print '  {} {}'.format(mapfile, pair)
+            for (s,p) in scores:
+                print '    {} [{}]: {} ({})'.format(ranks[p], cumulative[p]/games[p],p,s)
+    for p in programs:
+        print '{}: {}'.format(cumulative[p], p)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compete some punters')
