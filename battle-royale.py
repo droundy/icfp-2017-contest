@@ -24,11 +24,9 @@ def battle(max_size, programs, vis):
         cumulative[p] = 0
         games[p] = 0
     for p in permutations:
-        pairs.add(tuple(sorted(p[:2])))
-        pairs.add(tuple(reversed(sorted(p[:2]))))
-        if len(programs) > 2:
-            for pperm in itertools.permutations(p[:3]):
-                triples.add(tuple(pperm))
+        for l in range(2,len(programs)+1):
+            pairs.add(tuple(p[:l]))
+
     jobs = []
     for mapfile in glob.glob('maps/*.json'):
         with open(mapfile) as f:
