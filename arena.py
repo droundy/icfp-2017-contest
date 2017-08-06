@@ -47,6 +47,7 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None,
         plt.draw()
         plt.pause(1e-6)
 
+    scores = []
     for movenum in range(len(serverstate['riverdata'])):
         punterid = movenum % num_punters
         # the following passes just the most recent num_punters moves
@@ -66,7 +67,10 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None,
             all_moves.append(result)
             if vis:
                 plt.cla()
-                visualize.visualize_board(serverstate, punter_executables)
+                legends = punter_executables
+                if len(scores) > 0:
+                    legends = map(lambda (s,n): '{} - {}'.format(s,n), scores)
+                visualize.visualize_board(serverstate, legends)
                 plt.draw()
                 plt.pause(1e-6)
         scores = []
