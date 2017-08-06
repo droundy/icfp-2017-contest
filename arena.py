@@ -59,7 +59,7 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None):
             print_verbose('score for {} ({}) is {}'
                           .format(pid, punter_executables[pid], score))
             scores.append((score, punter_executables[pid]))
-    return list(reversed(sorted(scores)))
+    return list(sorted(scores))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compete some punters')

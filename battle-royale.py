@@ -23,8 +23,10 @@ def battle(max_size, programs):
         cumulative[p] = 0
     for p in permutations:
         pairs.add(tuple(sorted(p[:2])))
+        pairs.add(tuple(reversed(sorted(p[:2]))))
         if len(programs) > 2:
-            triples.add(tuple(sorted(p[:3])))
+            for pperm in itertools.permutations(p[:3]):
+                triples.add(tuple(pperm))
     for mapfile in glob.glob('maps/*.json'):
         with open(mapfile) as f:
             themap = rwjson.readJson(f)
