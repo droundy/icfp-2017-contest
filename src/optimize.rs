@@ -6,6 +6,7 @@ use std::collections::HashSet;
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Optimizer {
     Random,
+    Greedy,
     InitialMine,
 
 }
@@ -29,6 +30,36 @@ impl Optimizer {
                             };
                         }
                     }
+                }
+            },
+            &Optimizer::Greedy => {
+                let available: Vec<_> = state.riverdata.iter()
+                    .filter(|r| r.claimed.is_none()).cloned().collect();
+                let mut state = state.clone();
+                let mut bestscore = -1e200;
+                if let Ok(mut plan) = bestlaidplan.lock() {
+                    bestscore = plan.value;
+                }
+                for a in available {
+                    // experiment with claiming this river for ourselves.
+                    state.riverdata[a.id.0].claimed = Some(state.punter);
+                    let score = Rater::Score.score(&state);
+                    if score > bestscore {
+                        bestscore = score;
+                        if let Ok(mut plan) = bestlaidplan.lock() {
+                            if score > plan.value {
+                                *plan = Plan {
+                                    value: score,
+                                    river: a.id,
+                                    why: format!("greedy with score {}", score),
+                                };
+                            } else {
+                                bestscore = plan.value;
+                            }
+                        }
+                    }
+                    // return to actual current state.
+                    state.riverdata[a.id.0].claimed = None;
                 }
             },
             &Optimizer::InitialMine => {
@@ -61,10 +92,17 @@ pub enum Rater {
 }
 
 impl Rater {
-    fn score(&self, state: &State, punter: PunterId) -> f64 {
+    fn score(&self, state: &State) -> f64 {
         match self {
             &Rater::Score => {
-                0.0
+                let mut totalscore = 0;
+                for &m in state.map.mines.iter() {
+                    let d = distances(state, m);
+                    for r in punter_reaches(state, m) {
+                        totalscore += d[&r]*d[&r];
+                    }
+                }
+                totalscore as f64
             },
         }
     }
@@ -92,15 +130,21 @@ fn distances(state: &State, mineid: SiteId) -> HashMap<SiteId, usize> {
     distances
 }
 
-// def punter_reaches(nice, mineid, punterid):
-//     reached = set([])
-//     old_sites = {mineid}
-//     while len(old_sites) > 0:
-//         new_sites = set([])
-//         for site in old_sites:
-//             for neighbor in nice['rivermap'][site]:
-//                 if neighbor not in reached and nice['riverdata'][nice['rivermap'][site][neighbor]]['claimed'] == punterid:
-//                     reached.add(neighbor)
-//                     new_sites.add(neighbor)
-//         old_sites = new_sites
-//     return reached
+fn punter_reaches(state: &State, mineid: SiteId) -> HashSet<SiteId> {
+    let mut reached = HashSet::new();
+    let mut old_sites = HashSet::new();
+    old_sites.insert(mineid);
+    while old_sites.len() > 0 {
+        let mut new_sites = HashSet::new();
+        for &site in old_sites.iter() {
+            for &neighbor in state.rivermap[&site].keys() {
+                if !reached.contains(&neighbor) && state.riverdata[state.rivermap[&site][&neighbor].0].claimed == Some(state.punter) {
+                    reached.insert(neighbor);
+                    new_sites.insert(neighbor);
+                }
+            }
+        }
+        old_sites = new_sites;
+    }
+    reached
+}
