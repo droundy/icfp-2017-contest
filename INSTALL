@@ -3,5 +3,5 @@
 set -ev
 
 cargo build --release
-cp target/release/punter target/release/punter-*[^.]? .
+mv target/release/punter target/release/punter-*[^.]? .
 
