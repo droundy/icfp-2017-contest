@@ -31,8 +31,6 @@ impl Optimizer {
                 }
             },
             &Optimizer::InitialMine => {
-                let available: Vec<_> = state.riverdata.iter()
-                    .filter(|r| r.claimed.is_none()).cloned().collect();
                 let minerivers: Vec<RiverData> = state.map.mines.iter()
                     .flat_map(|m| state.rivermap[m].values().map(|r| state.riverdata[r.0].clone()))
                     .filter(|r| r.claimed.is_none())
@@ -42,7 +40,7 @@ impl Optimizer {
                         if plan.value < 0.0 {
                             *plan = Plan {
                                 value: 1.0,
-                                river: available[0].id,
+                                river: minerivers[0].id,
                                 why: format!("get to mine"),
                             };
                         }
