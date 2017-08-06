@@ -5,7 +5,7 @@ use rand::{thread_rng, Rng};
 use std::collections::HashSet;
 use std::cmp::Ordering;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Optimizer {
     Random,
     Greedy(StateRater),
@@ -35,10 +35,10 @@ impl Optimizer {
                     }
                 }
             },
-            &Optimizer::Greedy(rater) => {
+            &Optimizer::Greedy(ref rater) => {
                 pick_highest_rated(state, rivers_available(state), rater, bestlaidplan);
             },
-            &Optimizer::AllMines(rater) => {
+            &Optimizer::AllMines(ref rater) => {
                 let mut minerivers: Vec<RiverId> = new_mines(state).iter()
                     .flat_map(|m| state.rivermap[m].values()
                               .map(|r| &state.riverdata[r.0]))
@@ -56,10 +56,10 @@ impl Optimizer {
                         }
                     }
                 } else {
-                    Optimizer::InitialMine(rater).optimize(state, bestlaidplan);
+                    Optimizer::InitialMine(rater.clone()).optimize(state, bestlaidplan);
                 }
             },
-            &Optimizer::InitialMine(rater) => {
+            &Optimizer::InitialMine(ref rater) => {
                 let mut minerivers: Vec<RiverId> = state.map.mines.iter()
                     .flat_map(|m| state.rivermap[m].values().map(|r| state.riverdata[r.0].clone()))
                     .filter(|r| r.claimed.is_none()).map(|r| r.id).collect();
@@ -76,16 +76,20 @@ impl Optimizer {
                         }
                     }
                 } else {
-                    Optimizer::Greedy(rater).optimize(state, bestlaidplan);
+                    Optimizer::Greedy(rater.clone()).optimize(state, bestlaidplan);
                 }
             },
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum StateRater {
     Score,
+    BottleNecks,
+    Mines,
+    AllMines,
+    Sum(Vec<(StateRater,f64)>)
 }
 
 impl StateRater {
@@ -100,6 +104,36 @@ impl StateRater {
                     }
                 }
                 totalscore as f64
+            },
+            &StateRater::BottleNecks => {
+                let mut totalscore = 0.0;
+                for s in state.map.sites.iter().map(|s| s.id).filter(|&s| we_touch(state,s)) {
+                    let popularity = state.rivermap[&s].len() as f64;
+                    totalscore += 1.0/(popularity*popularity);
+                }
+                totalscore
+            },
+            &StateRater::Mines => {
+                let mut totalscore = 0.0;
+                for s in state.map.mines.iter().cloned().filter(|&s| we_touch(state,s)) {
+                    let popularity = state.rivermap[&s].len() as f64;
+                    totalscore += 1.0/popularity;
+                }
+                totalscore
+            },
+            &StateRater::AllMines => {
+                let mut totalscore = 0.0;
+                for nn in state.map.mines.iter().map(|&s| num_touch(state,s)) {
+                    totalscore += (nn as f64).sqrt();
+                }
+                totalscore
+            },
+            &StateRater::Sum(ref raters) => {
+                let mut totalscore = 0.0;
+                for &(ref r,weight) in raters.iter() {
+                    totalscore += weight*r.score(state);
+                }
+                totalscore
             },
         }
     }
@@ -209,7 +243,7 @@ fn punter_reaches(state: &State, mineid: SiteId) -> HashSet<SiteId> {
     reached
 }
 
-fn pick_highest_rated(state: &State, mut options: Vec<RiverId>, rater: StateRater,
+fn pick_highest_rated(state: &State, mut options: Vec<RiverId>, rater: &StateRater,
                       bestlaidplan: Arc<Mutex<Plan>>) {
     let mut state = state.clone();
     let mut bestscore = -1e200;
@@ -251,6 +285,12 @@ fn rivers_available(state: &State) -> Vec<RiverId> {
 fn we_touch(state: &State, s: SiteId) -> bool {
     state.rivermap[&s].values()
         .any(|rid| state.riverdata[rid.0].claimed == Some(state.punter))
+}
+
+/// How many rivers to here?
+fn num_touch(state: &State, s: SiteId) -> usize {
+    state.rivermap[&s].values()
+        .filter(|rid| state.riverdata[rid.0].claimed == Some(state.punter)).count()
 }
 
 /// Mines that we do not yet have rivers to.
