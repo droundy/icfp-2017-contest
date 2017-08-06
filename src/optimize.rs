@@ -1,5 +1,7 @@
 use super::*;
 
+use rand::random;
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Optimizer {
     Random,
@@ -15,11 +17,12 @@ impl Optimizer {
                     .filter(|r| r.claimed.is_none()).cloned().collect();
                 if available.len() > 0 {
                     //eprintln!("\navailable: {:?}", &available);
+                    let choice = random::<usize>() % available.len();
                     if let Ok(mut plan) = bestlaidplan.lock() {
                         if plan.value < 0.0 {
                             *plan = Plan {
                                 value: 0.0,
-                                river: available[0].id,
+                                river: available[choice].id,
                                 why: format!("randopt with {} choices",
                                              available.len()),
                             };
