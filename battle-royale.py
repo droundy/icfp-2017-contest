@@ -16,8 +16,9 @@ def rank_scores(scores):
 
 def battle(max_size, programs, vis):
     permutations = itertools.permutations(programs)
-    pairs = set([])
-    triples = set([])
+    pairs = {};
+    for i in range(len(programs)+1):
+        pairs[i] = set([])
     cumulative = {}
     games = {}
     for p in programs:
@@ -25,7 +26,12 @@ def battle(max_size, programs, vis):
         games[p] = 0
     for p in permutations:
         for l in range(2,len(programs)+1):
-            pairs.add(tuple(p[:l]))
+            pairs[l].add(tuple(p[:l]))
+    groups = []
+    for l in range(2,len(programs)+1):
+        pairs[l] = list(pairs[l])
+        random.shuffle(pairs[l])
+        groups += pairs[l][:len(pairs[2])]
 
     jobs = []
     for mapfile in glob.glob('maps/*.json'):
@@ -34,7 +40,7 @@ def battle(max_size, programs, vis):
         if len(themap['rivers']) > max_size:
             print mapfile,'is too long with size', len(themap['rivers'])
             continue
-        for pair in pairs.union(triples):
+        for pair in groups:
             jobs.append((mapfile, pair))
     random.shuffle(jobs)
     for mapfile, pair in jobs:
