@@ -18,12 +18,14 @@ def visualize_board(setup):
             source,target = setup['riverdata'][riverid]['sites']
             claimx = [setup['sitemap'][source]['x'],setup['sites'][target]['x']]
             claimy = [setup['sites'][source]['y'],setup['sites'][target]['y']]
-            plt.plot(claimx,claimy,farg[setup['riverdata'][i]['claimed']],linewidth = 2)
+            plt.plot(claimx,claimy,farg[setup['riverdata'][i]['claimed']],linewidth = 6)
     for j in range(len(setup['siteids'])):
-        plt.plot(setup['sites'][j]['x'],setup['sites'][j]['y'],'k.')
+        plt.plot(setup['sites'][j]['x'],setup['sites'][j]['y'],'k.',
+                 markersize=10)
     for k in range(len(setup['mines'])):
         mineLoc = setup['mines'][k]
-        plt.plot(setup['sites'][mineLoc]['x'],setup['sites'][mineLoc]['y'],'-ro')
+        plt.plot(setup['sites'][mineLoc]['x'],setup['sites'][mineLoc]['y'],'ro',
+                 markersize=10)
 
 if __name__ == "__main__":
     with open('examples/gameplay0.txt') as f:
