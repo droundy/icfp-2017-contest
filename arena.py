@@ -56,7 +56,8 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None):
         scores = []
         for pid in range(num_punters):
             score = pt.score(serverstate, pid)
-            print_verbose('score for {} is {}'.format(pid, score))
+            print_verbose('score for {} ({}) is {}'
+                          .format(pid, punter_executables[pid], score))
             scores.append((score, punter_executables[pid]))
     return list(reversed(sorted(scores)))
 
