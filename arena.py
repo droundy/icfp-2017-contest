@@ -1,9 +1,13 @@
 #!/usr/bin/env python2
 
-import sys, os, subprocess, argparse
+import sys, os, subprocess, argparse, numpy
+import matplotlib.pyplot as plt
+
+plt.ion()
 
 import rwjson
 import puntertools as pt
+import visualize
 
 def offline_call(args, inp):
     #print 'calling', args, 'with', inp
@@ -15,7 +19,10 @@ def offline_call(args, inp):
     #print 'have written back to offline'
     return rwjson.readMessage(x.stdout)
 
-def arena(mapfile, punter_executables, print_verbose = lambda x: None):
+def arena(mapfile, punter_executables, print_verbose = lambda x: None,
+          vis = False):
+    if vis:
+        plt.ion()
     num_punters = len(punter_executables)
     states = [0]*len(punter_executables)
     with open(mapfile) as f:
@@ -35,6 +42,10 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None):
         all_moves.append({'pass': {'punter': punterid}})
 
     print_verbose('\nstates are {}'.format(states))
+    if vis:
+        visualize.visualize_board(serverstate)
+        plt.draw()
+        plt.pause(1e-6)
 
     for movenum in range(len(serverstate['siteids'])):
         punterid = movenum % num_punters
@@ -53,6 +64,11 @@ def arena(mapfile, punter_executables, print_verbose = lambda x: None):
             del result['state']
             pt.update_nice(serverstate, [result])
             all_moves.append(result)
+            if vis:
+                plt.cla()
+                visualize.visualize_board(serverstate)
+                plt.draw()
+                plt.pause(1e-6)
         scores = []
         for pid in range(num_punters):
             score = pt.score(serverstate, pid)
@@ -69,6 +85,7 @@ if __name__ == "__main__":
     parser.add_argument('programs', metavar='PUNTER', nargs=argparse.REMAINDER,
                         help='the programs to compete')
     parser.add_argument('--verbose', action='store_true', help='be verbose')
+    parser.add_argument('--visualize', action='store_true', help='visualize game')
 
     args = parser.parse_args()
     while len(args.programs) < 2:
@@ -83,5 +100,5 @@ if __name__ == "__main__":
         print x
     if args.verbose:
         print_verbose = actual_print
-    scores = arena(args.map, args.programs, print_verbose)
+    scores = arena(args.map, args.programs, print_verbose, vis=args.visualize)
     print 'scores are {}'.format(scores)
