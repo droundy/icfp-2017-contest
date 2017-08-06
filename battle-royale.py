@@ -40,6 +40,7 @@ def battle(max_size, programs, vis):
             jobs.append((mapfile, pair))
     random.shuffle(jobs)
     for mapfile, pair in jobs:
+        print '  {} {}'.format(mapfile, pair)
         with open(mapfile) as f:
             themap = rwjson.readJson(f)
             scores = arena.arena(mapfile, pair, vis=vis)
@@ -47,7 +48,6 @@ def battle(max_size, programs, vis):
             for p in ranks:
                 cumulative[p] += ranks[p]
                 games[p] += 1
-            print '  {} {}'.format(mapfile, pair)
             for (s,p) in scores:
                 print '    {} [{:.2f}]: {} ({})'.format(ranks[p],
                                                         cumulative[p]/games[p],p,s)
@@ -56,7 +56,7 @@ def battle(max_size, programs, vis):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compete some punters')
-    parser.add_argument('--max', metavar='NODES', type=int, nargs=1,
+    parser.add_argument('--max', metavar='NODES', type=int, action='store',
                         default=100,
                         help='the largest size map to test')
     parser.add_argument('--visualize', action='store_true', help='visualize game')
