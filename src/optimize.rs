@@ -10,13 +10,15 @@ pub enum Optimizer {
     Random,
     Greedy(StateRater),
     AllMines(StateRater),
+    Parallel(Box<StateRater>, Box<StateRater>),
     InitialMine(StateRater),
-
 }
 
 impl Optimizer {
     pub(crate) fn optimize(&self, state: &State, bestlaidplan: Arc<Mutex<Plan>>) {
         match self {
+            &Optimizer::Parallel(ref a, ref b) => {
+            },
             &Optimizer::Random => {
                 let available: Vec<_> = state.riverdata.iter()
                     .filter(|r| r.claimed.is_none()).cloned().collect();
