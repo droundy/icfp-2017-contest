@@ -89,7 +89,8 @@ pub enum StateRater {
     BottleNecks,
     Mines,
     AllMines,
-    Sum(Vec<(StateRater,f64)>)
+    Add(Box<StateRater>, Box<StateRater>),
+    Scale(Box<StateRater>,f64),
 }
 
 impl StateRater {
@@ -128,17 +129,34 @@ impl StateRater {
                 }
                 totalscore
             },
-            &StateRater::Sum(ref raters) => {
-                let mut totalscore = 0.0;
-                for &(ref r,weight) in raters.iter() {
-                    totalscore += weight*r.score(state);
-                }
-                totalscore
+            &StateRater::Add(ref a, ref b) => {
+                a.score(state) + b.score(state)
+            },
+            &StateRater::Scale(ref r, factor) => {
+                factor*r.score(state)
             },
         }
     }
 }
 
+impl std::ops::Add for StateRater {
+    type Output = StateRater;
+    fn add(self, other: StateRater) -> StateRater {
+        StateRater::Add(Box::new(self), Box::new(other))
+    }
+}
+impl std::ops::Mul<StateRater> for f64 {
+    type Output = StateRater;
+    fn mul(self, rater: StateRater) -> StateRater {
+        StateRater::Scale(Box::new(rater), self)
+    }
+}
+impl std::ops::Mul<StateRater> for isize {
+    type Output = StateRater;
+    fn mul(self, rater: StateRater) -> StateRater {
+        StateRater::Scale(Box::new(rater), self as f64)
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum SiteRater {
