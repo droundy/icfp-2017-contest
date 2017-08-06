@@ -11,7 +11,7 @@ use std::io::{Read,Write};
 use std::collections::hash_map::HashMap;
 use std::sync::{Arc,Mutex};
 
-pub use optimize::Optimizer;
+pub use optimize::{Optimizer, StateRater};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Default, Hash)]
 struct PunterId(pub usize);

@@ -1,5 +1,5 @@
 extern crate punter;
 
 fn main() {
-    punter::main_helper(punter::Optimizer::Greedy);
+    punter::main_helper(punter::Optimizer::Greedy(punter::StateRater::Score));
 }
