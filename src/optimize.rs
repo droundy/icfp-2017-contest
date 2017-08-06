@@ -107,6 +107,8 @@ pub enum StateRater {
     AllMines,
     Add(Box<StateRater>, Box<StateRater>),
     Scale(Box<StateRater>,f64),
+    /// checks two moves ahead
+    NextMove(Box<StateRater>, f64),
 }
 
 impl StateRater {
@@ -145,8 +147,46 @@ impl StateRater {
                 }
                 totalscore
             },
+            &StateRater::NextMove(ref rater, scaledown) => {
+                let mut state = state.clone();
+                let enemy = if state.punter.0 == 0 {
+                    PunterId(1)
+                } else {
+                    PunterId(0)
+                };
+                let initial_score = rater.score(&state);
+                let mut worstbest = 1e200;
+                let mut secondworstbest = 1e200;
+                for &enemyrid in &rivers_available(&state) {
+                    // experiment with enemy claiming this river for themselves.
+                    state.riverdata[enemyrid.0].claimed = Some(enemy);
+                    let mut best = -1e200;
+                    for rid in &rivers_available(&state) {
+                        // experiment with claiming this river for ourselves.
+                        state.riverdata[rid.0].claimed = Some(state.punter);
+                        let score = rater.score(&state);
+                        if score > best {
+                            best = score;
+                        }
+                        state.riverdata[rid.0].claimed = None;
+                    }
+                    if best < worstbest {
+                        secondworstbest = worstbest;
+                        worstbest = best;
+                        if secondworstbest == 1e200 {
+                            secondworstbest = worstbest;
+                        }
+                    }
+                    state.riverdata[enemyrid.0].claimed = None;
+                }
+                // eprintln!("secondworst: {} worst: {}", secondworstbest, worstbest);
+                initial_score + (secondworstbest - initial_score)/scaledown
+            },
             &StateRater::Add(ref a, ref b) => {
-                a.score(state) + b.score(state)
+                let ascore = a.score(state);
+                let bscore = b.score(state);
+                //eprintln!("{} ({:?}) + {} ({:?}) = {}", ascore, a, bscore, b, ascore+bscore);
+                ascore+bscore
             },
             &StateRater::Scale(ref r, factor) => {
                 factor*r.score(state)
@@ -171,6 +211,12 @@ impl std::ops::Mul<StateRater> for isize {
     type Output = StateRater;
     fn mul(self, rater: StateRater) -> StateRater {
         StateRater::Scale(Box::new(rater), self as f64)
+    }
+}
+impl std::ops::Div<f64> for StateRater {
+    type Output = StateRater;
+    fn div(self, scaledown: f64) -> StateRater {
+        StateRater::NextMove(Box::new(self), scaledown)
     }
 }
 

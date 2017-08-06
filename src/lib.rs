@@ -269,6 +269,7 @@ pub fn main_helper(optimizer: Optimizer) {
         let statestr = serde_json::to_string(&state).unwrap();
         let totalstring = format!("{}, \"state\": {}}}", movestr, statestr);
         print_string_with_length(&totalstring);
+        std::process::exit(0);
     } else {
         println!("It is neither");
         serde_json::from_slice::<Gameplay>(&input).unwrap();
