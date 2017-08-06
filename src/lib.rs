@@ -110,6 +110,7 @@ struct RiverData {
     id: RiverId,
     sites: [SiteId; 2],
     claimed: Option<PunterId>,
+    option_claimed: Option<PunterId>,
 }
 
 trait Measurer : Default {
@@ -156,6 +157,7 @@ impl State {
                 id: id,
                 sites: [r.target, r.source],
                 claimed: None,
+                option_claimed: None,
             });
             for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
                 let mut had_it = false;
