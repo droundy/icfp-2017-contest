@@ -23,7 +23,7 @@ impl Optimizer {
                             *plan = Plan {
                                 value: 0.0,
                                 river: available[choice].id,
-                                why: format!("randopt with {} choices",
+                                why: format!("random with {} choices",
                                              available.len()),
                             };
                         }
