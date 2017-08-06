@@ -102,6 +102,8 @@ impl Optimizer {
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum StateRater {
     Score,
+    EnemyScore,
+    NetScore,
     BottleNecks,
     Mines,
     AllMines,
@@ -114,6 +116,9 @@ pub enum StateRater {
 impl StateRater {
     fn score(&self, state: &State) -> f64 {
         match self {
+            &StateRater::NetScore => {
+                StateRater::Score.score(state) + 0.5*StateRater::EnemyScore.score(state)
+            },
             &StateRater::Score => {
                 let mut totalscore = 0;
                 for &m in state.map.mines.iter() {
@@ -123,6 +128,22 @@ impl StateRater {
                     }
                 }
                 totalscore as f64
+            },
+            &StateRater::EnemyScore => {
+                let mut totalscore = 0;
+                let mut tempstate = state.clone();
+                for i in 0 .. state.punters {
+                    if i != state.punter.0 {
+                        tempstate.punter = PunterId(i);
+                        for &m in state.map.mines.iter() {
+                            let d = distances(&tempstate, m);
+                            for r in punter_reaches(&tempstate, m) {
+                                totalscore += d[&r]*d[&r];
+                            }
+                        }
+                    }
+                }
+                (totalscore as f64)/(-(state.punters as f64) + 1.0)
             },
             &StateRater::BottleNecks => {
                 let mut totalscore = 0.0;
