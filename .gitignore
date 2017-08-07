@@ -108,3 +108,4 @@ ENV/
 .mypy_cache/
 /target/
 **/*.rs.bk
+*.tar.gz
