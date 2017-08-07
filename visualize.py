@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import puntertools as pt
 from rwjson import readMessage,writeMessage,readJson
 
-farg = ['--r',':m','-y','-c','-g']
+farg = ['--r',':m','-y','-c','-g', ':k']
 
 def visualize_board(setup, punter_names=None):
     if punter_names is None:
