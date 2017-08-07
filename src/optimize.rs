@@ -105,6 +105,7 @@ pub enum StateRater {
     EnemyScore,
     NetScore,
     BottleNecks,
+    Desperate,
     Mines,
     AllMines,
     Add(Box<StateRater>, Box<StateRater>),
@@ -152,6 +153,15 @@ impl StateRater {
                 for s in state.map.sites.iter().map(|s| s.id).filter(|&s| we_touch(state,s)) {
                     let popularity = state.rivermap[&s].len() as f64;
                     totalscore += 1.0/(popularity*popularity);
+                }
+                totalscore
+            },
+            &StateRater::Desperate => {
+                let mut totalscore = 0.0;
+                for s in state.map.sites.iter().map(|s| s.id).filter(|&s| !we_touch(state,s)) {
+                    let available = state.rivermap[&s].values()
+                        .filter(|&s| state.riverdata[s.0].claimed == None).count() as f64;
+                    totalscore += -1.0/(available*available);
                 }
                 totalscore
             },
