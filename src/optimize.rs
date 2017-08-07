@@ -10,6 +10,7 @@ pub enum Optimizer {
     Random,
     Greedy(StateRater),
     AllMines(StateRater),
+    ConnectMines(StateRater),
     Parallel(Box<Optimizer>, Box<Optimizer>),
     InitialMine(StateRater),
 }
@@ -53,6 +54,86 @@ impl Optimizer {
             },
             &Optimizer::Greedy(ref rater) => {
                 pick_highest_rated(state, rivers_available(state), rater, bestlaidplan);
+            },
+            &Optimizer::ConnectMines(ref rater) => {
+                let mut state = state.clone();
+                let mut importance = vec![0.0; state.riverdata.len()];
+                let mut best = 0.0;
+                let mut mines_left = HashSet::new();
+                for m1 in state.map.mines.iter().cloned() {
+                    let d_old = my_distances(&state, m1);
+                    for m2 in state.map.mines.iter().filter(|m2| m2.0 > m1.0)
+                        .filter(|m2| d_old.contains_key(m2) && d_old[m2] > 0)
+                    {
+                        mines_left.insert(*m2);
+                        mines_left.insert(m1);
+                    }
+                    for r in 0..state.riverdata.len() {
+                        if state.riverdata[r].claimed.is_none() {
+                            state.riverdata[r].claimed = Some(PunterId(500));
+                            let d_new = my_distances(&state, m1);
+                            for m2 in state.map.mines.iter().cloned()
+                                .filter(|m2| m2.0 > m1.0)
+                                .filter(|m2| d_old.contains_key(m2))
+                                .filter(|m2| d_old[&m2] > 0)
+                            {
+                                let dist = if !d_new.contains_key(&m2) {
+                                    state.riverdata.len()
+                                } else {
+                                    d_new[&m2] - d_old[&m2]
+                                } as f64;
+                                importance[r] += dist/d_old[&m2] as f64;
+                                if importance[r] > best {
+                                    best = importance[r];
+                                    if let Ok(mut plan) = bestlaidplan.lock() {
+                                        if plan.value < importance[r] {
+                                            *plan = Plan {
+                                                value: importance[r],
+                                                river: RiverId(r),
+                                                why: format!("connect mines"),
+                                            };
+                                        }
+                                    }
+                                }
+
+                            }
+                            state.riverdata[r].claimed = None;
+                        }
+                    }
+                }
+                if best > 0.0 {
+                    //eprintln!("made a nice connection! {}  :)", best);
+                    return;
+                }
+                for m1 in mines_left.iter().cloned() {
+                    let d1 = my_distances(&state, m1);
+                    for m2 in mines_left.iter().filter(|m2| m2.0 > m1.0)
+                        .filter(|m2| d1.contains_key(m2) && d1[m2] > 0)
+                        .cloned()
+                    {
+                        let d12 = d1[&m2];
+                        let d2 = my_distances(&state, m2);
+                        for r in d1.iter().filter(|&(_,&dd)| dd == 0)
+                            .map(|(s1,_)| s1)
+                            .filter(|s1| d2[s1] == d12)
+                            .flat_map(|s1| state.rivermap[s1].iter())
+                            .filter(|&(s2,_)| d2[s2] == d12-1)
+                            .map(|(_,&r)| r)
+                        {
+                            if let Ok(mut plan) = bestlaidplan.lock() {
+                                //eprintln!("connecting with ambiguity...");
+                                *plan = Plan {
+                                    value: 100.0,
+                                    river: r,
+                                    why: format!("connect mines with ambiguity"),
+                                };
+                            }
+                            return;
+                        }
+                    }
+                }
+                //eprintln!("no connections needed?");
+                Optimizer::Greedy(rater.clone()).optimize(&state, bestlaidplan);
             },
             &Optimizer::AllMines(ref rater) => {
                 let mut minerivers: Vec<RiverId> = new_mines(state).iter()
@@ -348,6 +429,48 @@ fn compare(a: f64, b: f64) -> Ordering {
         Some(o) => o,
         None => Ordering::Equal,
     }
+}
+
+fn my_distances(state: &State, mineid: SiteId) -> HashMap<SiteId, usize> {
+    let mut distances = HashMap::new();
+    distances.insert(mineid, 0);
+    let mut current_distance = 0;
+    let mut old_sites = HashSet::new();
+    old_sites.insert(mineid);
+    while distances.len() < state.map.sites.len() && old_sites.len() > 0 {
+        let mut new_sites = HashSet::new();
+        for &site in old_sites.iter() {
+            for &neighbor in state.rivermap[&site].iter()
+                .map(|(k,r)| (k,state.riverdata[r.0].clone()))
+                .filter(|&(_,ref r)| r.claimed == Some(state.punter))
+                .map(|(k,_)| k)
+            {
+                if !distances.contains_key(&neighbor) && !old_sites.contains(&neighbor) {
+                    distances.insert(neighbor, current_distance);
+                    new_sites.insert(neighbor);
+                }
+            }
+        }
+        if new_sites.len() > 0 {
+            old_sites.extend(new_sites);
+            continue;
+        }
+        current_distance += 1;
+        for &site in old_sites.iter() {
+            for &neighbor in state.rivermap[&site].iter()
+                .map(|(k,r)| (k,state.riverdata[r.0].clone()))
+                .filter(|&(_,ref r)| r.claimed.is_none())
+                .map(|(k,_)| k)
+            {
+                if !distances.contains_key(&neighbor) {
+                    distances.insert(neighbor, current_distance);
+                    new_sites.insert(neighbor);
+                }
+            }
+        }
+        old_sites = new_sites;
+    }
+    distances
 }
 
 fn distances(state: &State, mineid: SiteId) -> HashMap<SiteId, usize> {
