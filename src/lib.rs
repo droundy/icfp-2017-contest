@@ -8,7 +8,7 @@ extern crate rand;
 mod optimize;
 
 use std::io::{Read,Write};
-use std::collections::hash_map::HashMap;
+use std::collections::{HashSet,HashMap};
 use std::sync::{Arc,Mutex};
 
 pub use optimize::{Optimizer, StateRater};
@@ -117,11 +117,12 @@ trait Measurer : Default {
     fn measure(&mut self, state: &State) -> f64;
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialOrd, PartialEq, Default)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Default)]
 struct Plan {
     value: f64,
     river: RiverId,
     why: String,
+    done_flags: HashSet<String>,
 }
 impl Plan {
     fn new() -> Plan {
@@ -129,6 +130,7 @@ impl Plan {
             value: -1e200,
             river: RiverId(0),
             why: String::from("new"),
+            done_flags: HashSet::new(),
         }
     }
 }
@@ -143,6 +145,7 @@ struct State {
     #[serde(default)]
     riverdata: Vec<RiverData>,
     optimizer: Optimizer,
+    done_flags: HashSet<String>,
 }
 
 impl State {
@@ -182,6 +185,7 @@ impl State {
             rivermap: rivermap,
             riverdata: riverdata,
             optimizer: optimizer,
+            done_flags: HashSet::new(),
         }
     }
     /// Here we use the AI to decide what to do.
@@ -194,6 +198,9 @@ impl State {
         });
         std::thread::sleep(std::time::Duration::from_millis(900));
         let final_plan = bestlaidplan.lock().unwrap();
+        if final_plan.done_flags.len() > 0 {
+            self.done_flags = final_plan.done_flags.clone();
+        }
         let sites = self.riverdata[final_plan.river.0].sites;
         Move::Claim {
             punter: self.punter,
