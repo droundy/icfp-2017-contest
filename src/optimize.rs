@@ -117,7 +117,7 @@ impl Optimizer {
                             .map(|(s1,_)| s1)
                             .filter(|s1| d2[s1] == d12)
                             .flat_map(|s1| state.rivermap[s1].iter())
-                            .filter(|&(s2,_)| d2[s2] == d12-1)
+                            .filter(|&(s2,_)| d2.contains_key(s2) && d2[s2] == d12-1)
                             .map(|(_,&r)| r)
                         {
                             if let Ok(mut plan) = bestlaidplan.lock() {
