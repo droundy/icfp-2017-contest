@@ -9,6 +9,7 @@ def visualize_board(nice, punter_names=None):
     if punter_names is None:
         punter_names = range(100)
     have_legend = set([])
+    plt.gca().set_position([0,0,1,1])
     for riverdata in nice['riverdata']:
         riverid = riverdata['id']
         source,target = riverdata['sites']
