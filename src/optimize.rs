@@ -390,8 +390,10 @@ impl SiteRater {
             &SiteRater::Farthest => {
                 let mut score = 0.0;
                 for (&s, &dist) in &distances(state, site) {
-                    if SiteRater::NotOurs.rate(state, s) == 0.0 {
-                        score -= 1.0 / (dist as f64 *dist as f64);
+                    if dist < 1024 {
+                        if SiteRater::NotOurs.rate(state, s) == 0.0 {
+                            score -= 1.0 / (dist as f64 *dist as f64);
+                        }
                     }
                 }
                 score
