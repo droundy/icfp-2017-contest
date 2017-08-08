@@ -57,6 +57,8 @@ impl Optimizer {
                 pick_highest_rated(state, rivers_available(state), rater, bestlaidplan);
             },
             &Optimizer::ConnectMines(ref rater) => {
+                // ensure that we at *least* go random!
+                Optimizer::Random.optimize(&state, bestlaidplan);
                 if !state.done_flags.contains("pick_highest_rated") {
                     let mut state = state.clone();
                     let mut importance = vec![0.0; state.riverdata.len()];
