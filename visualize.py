@@ -26,11 +26,10 @@ def visualize_board(nice, punter_names=None):
                 plt.plot(x,y,farg[whoclaimed],linewidth = 6,
                          label=punter_names[whoclaimed])
                 have_legend.add(whoclaimed)
-    for j in range(len(nice['siteids'])):
+    for j in nice['siteids']:
         plt.plot(nice['sitemap'][j]['x'],nice['sitemap'][j]['y'],'k.',
                  markersize=10)
-    for k in range(len(nice['mines'])):
-        mineLoc = nice['mines'][k]
+    for mineLoc in nice['mines']:
         plt.plot(nice['sitemap'][mineLoc]['x'],nice['sitemap'][mineLoc]['y'],'ro',
                  markersize=10)
     plt.legend(loc='best')
