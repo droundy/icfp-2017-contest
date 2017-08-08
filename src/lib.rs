@@ -153,6 +153,9 @@ impl State {
         let mut rivermap: HashMap<SiteId,HashMap<SiteId,RiverId>> = HashMap::new();
         let mut riverdata: Vec<RiverData> = Vec::new();
         let mut next = 0;
+        for site in s.map.sites.iter().map(|s| s.id) {
+            rivermap.insert(site, HashMap::new());
+        }
         for r in s.map.rivers.iter() {
             let id = RiverId(next);
             next += 1;
@@ -162,6 +165,7 @@ impl State {
                 claimed: None,
                 option_claimed: None,
             });
+            // eprintln!("river goes from {:?} to {:?}", r.target, r.source);
             for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
                 let mut had_it = false;
                 if let Some(child) = rivermap.get_mut(&site) {
@@ -218,6 +222,7 @@ impl State {
             match m {
                 &Move::Pass {punter: _} => (),
                 &Move::Claim { punter, source, target } => {
+                    // eprintln!("claim {:?} {:?}", source, target);
                     let rid = self.rivermap[&source][&target];
                     if self.riverdata[rid.0].claimed.is_none() {
                         //eprintln!("{:?} got the river {:?}!", punter, rid);
