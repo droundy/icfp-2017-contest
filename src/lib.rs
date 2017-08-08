@@ -156,28 +156,63 @@ impl State {
         for site in s.map.sites.iter().map(|s| s.id) {
             rivermap.insert(site, HashMap::new());
         }
-        for r in s.map.rivers.iter() {
-            let id = RiverId(next);
-            next += 1;
-            riverdata.push(RiverData {
-                id: id,
-                sites: [r.target, r.source],
-                claimed: None,
-                option_claimed: None,
-            });
-            // eprintln!("river goes from {:?} to {:?}", r.target, r.source);
-            for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
-                let mut had_it = false;
-                if let Some(child) = rivermap.get_mut(&site) {
-                    child.insert(other, id);
-                    had_it = true;
+        // The following somewhat convoluted code ensures that
+        // riverdata is sorted in order of distance from mines.  This
+        // is so that provided we iterate through the rivers in order,
+        // if we can't try all of them, at least we'll try those that
+        // are closest to the mines.
+        let mut old_sites: HashSet<_> = s.map.mines.iter().cloned().collect();
+        let mut rivers_done = HashSet::new();
+        while old_sites.len() > 0 {
+            let rivers_done_copy = rivers_done.clone();
+            let mut new_sites = HashSet::new();
+            for r in s.map.rivers.iter().cloned()
+                .filter(|&r| !rivers_done_copy.contains(&(r.source,r.target)))
+                .filter(|&r| old_sites.contains(&r.target) || old_sites.contains(&r.source))
+            {
+                rivers_done.insert((r.source,r.target));
+                if !old_sites.contains(&r.target) {
+                    new_sites.insert(r.target);
                 }
-                if !had_it {
-                    let mut child = HashMap::new();
-                    child.insert(other, id);
-                    rivermap.insert(site, child);
+                if !old_sites.contains(&r.source) {
+                    new_sites.insert(r.source);
+                }
+                let id = RiverId(next);
+                next += 1;
+                riverdata.push(RiverData {
+                    id: id,
+                    sites: [r.target, r.source],
+                    claimed: None,
+                    option_claimed: None,
+                });
+                // eprintln!("river goes from {:?} to {:?}", r.target, r.source);
+                for &(site,other) in &[(r.source, r.target), (r.target, r.source)] {
+                    let mut had_it = false;
+                    if let Some(child) = rivermap.get_mut(&site) {
+                        child.insert(other, id);
+                        had_it = true;
+                    }
+                    if !had_it {
+                        let mut child = HashMap::new();
+                        child.insert(other, id);
+                        rivermap.insert(site, child);
+                    }
                 }
             }
+            // the following handles the case where some rivers cannot
+            // ever reach a mine.  We could simply remove these
+            // rivers, but we cannot ensure that they won't be
+            // selected, and we don't want our rivermap to be lacking
+            // them.
+            if new_sites.len() == 0 {
+                for r in s.map.rivers.iter().cloned()
+                    .filter(|&r| !rivers_done.contains(&(r.source,r.target)))
+                {
+                    new_sites.insert(r.source);
+                    new_sites.insert(r.target);
+                }
+            }
+            old_sites = new_sites;
         }
         // FIXME eventually we want some AI in here, to make the most
         // of our 10 seconds! This also means we need a place in State
