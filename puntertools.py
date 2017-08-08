@@ -48,15 +48,18 @@ def distances(nice, mineid):
     distances = {mineid: 0}
     current_distance = 0
     old_sites = {mineid}
-    while len(distances) < len(nice['siteids']):
+    while len(distances) < len(nice['siteids']) and len(old_sites) > 0:
         current_distance += 1
         new_sites = set([])
         for site in old_sites:
             for neighbor in  nice['rivermap'][site]:
                 if neighbor not in distances:
-                    distances[neighbor] = current_distance+1
+                    distances[neighbor] = current_distance
                     new_sites.add(neighbor)
         old_sites = new_sites
+    for s in nice['siteids']:
+        if s not in distances:
+            distances[s] = 1024*1024*1024
     return distances
 
 def punter_reaches(nice, mineid, punterid):

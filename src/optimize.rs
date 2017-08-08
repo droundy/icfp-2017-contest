@@ -485,18 +485,23 @@ fn distances(state: &State, mineid: SiteId) -> HashMap<SiteId, usize> {
     let mut current_distance = 0;
     let mut old_sites = HashSet::new();
     old_sites.insert(mineid);
-    while distances.len() < state.map.sites.len() {
+    while distances.len() < state.map.sites.len() && old_sites.len() > 0 {
         current_distance += 1;
         let mut new_sites = HashSet::new();
         for &site in old_sites.iter() {
             for &neighbor in state.rivermap[&site].keys() {
                 if !distances.contains_key(&neighbor) {
-                    distances.insert(neighbor, current_distance+1);
+                    distances.insert(neighbor, current_distance);
                     new_sites.insert(neighbor);
                 }
             }
         }
         old_sites = new_sites;
+    }
+    for s in state.map.sites.iter().map(|s| s.id) {
+        if !distances.contains_key(&s) {
+            distances.insert(s, 1024*1024*1024);
+        }
     }
     distances
 }
